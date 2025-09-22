@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from enum import Enum
 
-from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, JSON, Boolean, Index
+from sqlalchemy import String, Text, Integer, ForeignKey, JSON, Boolean, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
@@ -47,60 +46,6 @@ class KnowledgeSource(str, Enum):
     WEB_SEARCH = "web_search"
 
 
-class KnowledgeContent(Base, TimestampMixin):
-    """Knowledge content metadata storage"""
-
-    __tablename__ = "knowledge_contents"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    agent_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
-    )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    content_type: Mapped[str] = mapped_column(String(50), default="text")
-    content_metadata: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True, default={}
-    )
-    access_count: Mapped[int] = mapped_column(Integer, default=0)
-
-    # Relationships
-    agent: Mapped["Agent"] = relationship("Agent", back_populates="knowledge_contents")
-    vectors: Mapped[List["KnowledgeVector"]] = relationship(
-        "KnowledgeVector", back_populates="content", cascade="all, delete-orphan"
-    )
-
-
-class KnowledgeVector(Base):
-    """Vector embeddings storage with pgvector"""
-
-    __tablename__ = "knowledge_vectors"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    content_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("knowledge_contents.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[Optional[List[float]]] = mapped_column(
-        Vector(1536), nullable=True
-    )  # OpenAI embedding dimension
-    content_metadata: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True, default={}
-    )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    content: Mapped["KnowledgeContent"] = relationship(
-        "KnowledgeContent", back_populates="vectors"
-    )
-
-
 class AgentMemory(Base, TimestampMixin):
     """Enhanced agent memory with vector embeddings"""
 
@@ -130,9 +75,6 @@ class AgentMemory(Base, TimestampMixin):
 
     # Context and relationships
     context_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
-    related_task_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True
-    )
 
     # Access and usage
     access_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -145,7 +87,6 @@ class AgentMemory(Base, TimestampMixin):
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", lazy="selectin")
-    related_task: Mapped["Task"] = relationship("Task", lazy="selectin")
 
     __table_args__ = (
         Index("ix_agent_memories_agent_id", "agent_id"),
@@ -199,50 +140,136 @@ class KnowledgeContext(Base, TimestampMixin):
     )
 
 
-class SemanticSearch(Base, TimestampMixin):
-    """Semantic search history and results"""
+class ContentType(str, Enum):
+    """Types of knowledge content"""
 
-    __tablename__ = "semantic_searches"
+    TEXT = "text"
+    PDF = "pdf"
+    DOCX = "docx"
+    JSON = "json"
+    HTML = "html"
+    MARKDOWN = "markdown"
+    CSV = "csv"
+
+
+class ContentStatus(str, Enum):
+    """Status of knowledge content processing"""
+
+    UPLOADED = "uploaded"
+    PROCESSING = "processing"
+    PROCESSED = "processed"
+    CHUNKED = "chunked"
+    EMBEDDED = "embedded"
+    READY = "ready"
+    ERROR = "error"
+
+
+class KnowledgeContent(Base, TimestampMixin):
+    """Content database - tracks metadata about knowledge content"""
+
+    __tablename__ = "knowledge_contents"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     agent_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("agents.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("agents.id"), nullable=False
     )
 
-    # Search details
-    query: Mapped[str] = mapped_column(Text, nullable=False)
-    query_embedding: Mapped[List[float]] = mapped_column(Vector(1536), nullable=True)
-
-    # Search parameters
-    search_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    filters: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
-    limit_results: Mapped[int] = mapped_column(Integer, default=10)
-
-    # Results
-    results_count: Mapped[int] = mapped_column(Integer, default=0)
-    results: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-
-    # Performance metrics
-    execution_time: Mapped[float] = mapped_column(nullable=True)
-    similarity_threshold: Mapped[float] = mapped_column(default=0.8)
-
-    # Context
-    task_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True
+    # Content metadata
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    content_type: Mapped[ContentType] = mapped_column(String(50), nullable=False)
+    status: Mapped[ContentStatus] = mapped_column(
+        String(50), default=ContentStatus.UPLOADED.value
     )
+
+    # Content data
+    content_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    file_hash: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )  # SHA-256
+
+    # Processing metadata
+    chunk_size: Mapped[int] = mapped_column(Integer, default=1000)
+    chunk_overlap: Mapped[int] = mapped_column(Integer, default=200)
+    total_chunks: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Content metadata from processing
+    content_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )
+
+    # Access tracking
+    access_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_accessed: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     # Relationships
     agent: Mapped["Agent"] = relationship("Agent", lazy="selectin")
-    task: Mapped["Task"] = relationship("Task", lazy="selectin")
+    chunks: Mapped[List["KnowledgeChunk"]] = relationship(
+        "KnowledgeChunk", back_populates="content", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
-        Index("ix_semantic_searches_agent_id", "agent_id"),
-        Index("ix_semantic_searches_search_type", "search_type"),
+        Index("ix_knowledge_contents_agent_id", "agent_id"),
+        Index("ix_knowledge_contents_content_type", "content_type"),
+        Index("ix_knowledge_contents_status", "status"),
+        Index("ix_knowledge_contents_file_hash", "file_hash"),
+    )
+
+
+class KnowledgeChunk(Base, TimestampMixin):
+    """Vector database - stores chunked content with embeddings"""
+
+    __tablename__ = "knowledge_chunks"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    content_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("knowledge_contents.id"), nullable=False
+    )
+    agent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agents.id"), nullable=False
+    )
+
+    # Chunk data
+    chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Vector embedding for semantic search
+    embedding: Mapped[Optional[List[float]]] = mapped_column(
+        Vector(1536), nullable=True
+    )
+
+    # Chunk metadata
+    chunk_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, nullable=True
+    )
+    start_position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    end_position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Search optimization
+    keywords: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    content: Mapped["KnowledgeContent"] = relationship(
+        "KnowledgeContent", back_populates="chunks"
+    )
+    agent: Mapped["Agent"] = relationship("Agent", lazy="selectin")
+
+    __table_args__ = (
+        Index("ix_knowledge_chunks_content_id", "content_id"),
+        Index("ix_knowledge_chunks_agent_id", "agent_id"),
+        Index("ix_knowledge_chunks_chunk_index", "chunk_index"),
+        Index("ix_knowledge_chunks_embedding", "embedding", postgresql_using="ivfflat"),
         Index(
-            "ix_semantic_searches_query_embedding",
-            "query_embedding",
-            postgresql_using="ivfflat",
+            "ix_knowledge_chunks_content_chunk",
+            "content_id",
+            "chunk_index",
+            unique=True,
         ),
     )

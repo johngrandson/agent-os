@@ -4,85 +4,20 @@ from sqlalchemy import select, func, and_, update
 from sqlalchemy.orm import selectinload
 
 from app.knowledge.knowledge import (
-    KnowledgeContent,
-    KnowledgeVector,
     AgentMemory,
     KnowledgeContext,
-    SemanticSearch,
+    KnowledgeContent,
+    KnowledgeChunk,
     MemoryType,
     MemoryPriority,
     KnowledgeSource,
+    ContentType,
+    ContentStatus,
 )
 from infrastructure.database.session import session
 
 
 class KnowledgeRepository:
-    async def save_content(self, content: KnowledgeContent) -> KnowledgeContent:
-        session.add(content)
-        await session.flush()
-        return content
-
-    async def save_vector(self, vector: KnowledgeVector) -> KnowledgeVector:
-        session.add(vector)
-        await session.flush()
-        return vector
-
-    async def get_content_by_id(
-        self, content_id: uuid.UUID
-    ) -> Optional[KnowledgeContent]:
-        stmt = select(KnowledgeContent).where(KnowledgeContent.id == content_id)
-        result = await session.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def get_contents_by_agent(
-        self, agent_id: uuid.UUID, limit: int = 10
-    ) -> List[KnowledgeContent]:
-        stmt = (
-            select(KnowledgeContent)
-            .where(KnowledgeContent.agent_id == agent_id)
-            .options(selectinload(KnowledgeContent.vectors))
-            .limit(limit)
-        )
-        result = await session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def search_vectors_by_similarity(
-        self,
-        agent_id: uuid.UUID,
-        embedding: List[float],
-        limit: int = 5,
-        threshold: float = 0.7,
-    ) -> List[KnowledgeVector]:
-        """Search for similar vectors using pgvector cosine similarity"""
-        stmt = (
-            select(KnowledgeVector)
-            .join(KnowledgeContent)
-            .where(
-                KnowledgeContent.agent_id == agent_id,
-                KnowledgeVector.embedding.cosine_distance(embedding) < (1 - threshold),
-            )
-            .order_by(KnowledgeVector.embedding.cosine_distance(embedding))
-            .limit(limit)
-        )
-
-        result = await session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def delete_content(self, content_id: uuid.UUID) -> bool:
-        content = await self.get_content_by_id(content_id)
-        if content:
-            await session.delete(content)
-            return True
-        return False
-
-    async def update_access_count(self, content_id: uuid.UUID) -> None:
-        stmt = select(KnowledgeContent).where(KnowledgeContent.id == content_id)
-        result = await session.execute(stmt)
-        content = result.scalar_one_or_none()
-        if content:
-            content.access_count += 1
-            await session.flush()
-
     # Enhanced Knowledge Methods
 
     async def save_agent_memory(self, memory: AgentMemory) -> AgentMemory:
@@ -159,16 +94,6 @@ class KnowledgeRepository:
         )
         await session.execute(stmt)
 
-    async def archive_memory(self, memory_id: uuid.UUID) -> bool:
-        """Archive a memory"""
-        stmt = (
-            update(AgentMemory)
-            .where(AgentMemory.id == memory_id)
-            .values(is_archived=True)
-        )
-        result = await session.execute(stmt)
-        return result.rowcount > 0
-
     async def save_knowledge_context(
         self, context: KnowledgeContext
     ) -> KnowledgeContext:
@@ -201,25 +126,134 @@ class KnowledgeRepository:
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_search_history(
+    # Knowledge Content Methods
+
+    async def create_knowledge_content(
+        self, content: KnowledgeContent
+    ) -> KnowledgeContent:
+        """Create knowledge content"""
+        session.add(content)
+        await session.flush()
+        return content
+
+    async def get_knowledge_content_by_id(
+        self, content_id: uuid.UUID
+    ) -> Optional[KnowledgeContent]:
+        """Get knowledge content by ID"""
+        stmt = select(KnowledgeContent).where(KnowledgeContent.id == content_id)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_knowledge_contents(
         self,
-        agent_id: Optional[uuid.UUID] = None,
-        search_type: Optional[str] = None,
-        session_id: Optional[uuid.UUID] = None,
+        agent_id: uuid.UUID,
+        content_type: Optional[ContentType] = None,
+        status: Optional[ContentStatus] = None,
         skip: int = 0,
-        limit: int = 50,
-    ) -> List[SemanticSearch]:
-        """Get semantic search history"""
-        stmt = select(SemanticSearch)
+        limit: int = 100,
+    ) -> List[KnowledgeContent]:
+        """Get knowledge contents for an agent"""
+        stmt = select(KnowledgeContent).where(KnowledgeContent.agent_id == agent_id)
 
-        if agent_id:
-            stmt = stmt.where(SemanticSearch.agent_id == agent_id)
-        if search_type:
-            stmt = stmt.where(SemanticSearch.search_type == search_type)
-        if session_id:
-            stmt = stmt.where(SemanticSearch.task_id == session_id)
+        if content_type:
+            stmt = stmt.where(KnowledgeContent.content_type == content_type)
+        if status:
+            stmt = stmt.where(KnowledgeContent.status == status)
 
-        stmt = stmt.offset(skip).limit(limit).order_by(SemanticSearch.created_at.desc())
+        stmt = (
+            stmt.offset(skip).limit(limit).order_by(KnowledgeContent.created_at.desc())
+        )
 
         result = await session.execute(stmt)
         return list(result.scalars().all())
+
+    async def update_content_status(
+        self, content_id: uuid.UUID, status: ContentStatus, total_chunks: int = 0
+    ) -> None:
+        """Update content status and chunk count"""
+        stmt = (
+            update(KnowledgeContent)
+            .where(KnowledgeContent.id == content_id)
+            .values(status=status, total_chunks=total_chunks)
+        )
+        await session.execute(stmt)
+
+    async def delete_knowledge_content(self, content_id: uuid.UUID) -> bool:
+        """Delete knowledge content and its chunks"""
+        content = await self.get_knowledge_content_by_id(content_id)
+        if not content:
+            return False
+
+        # Delete chunks first (handled by cascade)
+        await session.delete(content)
+        return True
+
+    # Knowledge Chunk Methods
+
+    async def create_knowledge_chunk(self, chunk: KnowledgeChunk) -> KnowledgeChunk:
+        """Create knowledge chunk"""
+        session.add(chunk)
+        await session.flush()
+        return chunk
+
+    async def get_content_chunks(
+        self, content_id: uuid.UUID, skip: int = 0, limit: int = 100
+    ) -> List[KnowledgeChunk]:
+        """Get chunks for a content"""
+        stmt = (
+            select(KnowledgeChunk)
+            .where(KnowledgeChunk.content_id == content_id)
+            .order_by(KnowledgeChunk.chunk_index)
+            .offset(skip)
+            .limit(limit)
+        )
+
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def search_chunks_by_similarity(
+        self,
+        agent_id: uuid.UUID,
+        embedding: List[float],
+        similarity_threshold: float = 0.8,
+        limit: int = 10,
+        content_type: Optional[ContentType] = None,
+    ) -> List[Tuple[KnowledgeChunk, KnowledgeContent, float]]:
+        """Search chunks using vector similarity with content metadata"""
+        stmt = (
+            select(
+                KnowledgeChunk,
+                KnowledgeContent,
+                KnowledgeChunk.embedding.cosine_similarity(embedding).label(
+                    "similarity"
+                ),
+            )
+            .join(KnowledgeContent, KnowledgeChunk.content_id == KnowledgeContent.id)
+            .where(
+                KnowledgeChunk.agent_id == agent_id,
+                KnowledgeContent.status == ContentStatus.READY,
+                KnowledgeChunk.embedding.cosine_similarity(embedding)
+                >= similarity_threshold,
+            )
+        )
+
+        if content_type:
+            stmt = stmt.where(KnowledgeContent.content_type == content_type)
+
+        stmt = stmt.order_by(
+            KnowledgeChunk.embedding.cosine_similarity(embedding).desc()
+        ).limit(limit)
+
+        result = await session.execute(stmt)
+        return [
+            (chunk, content, float(similarity))
+            for chunk, content, similarity in result.all()
+        ]
+
+    async def count_content_chunks(self, content_id: uuid.UUID) -> int:
+        """Count chunks for a content"""
+        stmt = select(func.count(KnowledgeChunk.id)).where(
+            KnowledgeChunk.content_id == content_id
+        )
+        result = await session.execute(stmt)
+        return result.scalar() or 0

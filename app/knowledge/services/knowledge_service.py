@@ -1,17 +1,17 @@
 import uuid
-import time
 from typing import List, Optional, Dict, Any, Tuple
 from openai import AsyncOpenAI
 
 from app.knowledge.knowledge import (
-    KnowledgeContent,
-    KnowledgeVector,
     AgentMemory,
     KnowledgeContext,
-    SemanticSearch,
+    KnowledgeContent,
+    KnowledgeChunk,
     MemoryType,
     MemoryPriority,
     KnowledgeSource,
+    ContentType,
+    ContentStatus,
 )
 from app.knowledge.repositories.knowledge_repository import KnowledgeRepository
 from app.events.bus import EventBus
@@ -30,102 +30,6 @@ class KnowledgeService:
         self.repository = repository
         self.openai_client = openai_client
         self.event_bus = event_bus
-
-    @Transactional()
-    async def add_content(
-        self,
-        agent_id: uuid.UUID,
-        name: str,
-        content: str,
-        description: Optional[str] = None,
-    ) -> KnowledgeContent:
-        """Add content and generate embeddings following Agno's pattern"""
-
-        # Create knowledge content record
-        knowledge_content = KnowledgeContent(
-            agent_id=agent_id, name=name, description=description, content_type="text"
-        )
-        await self.repository.save_content(knowledge_content)
-
-        # Chunk content (simple sentence-based chunking)
-        chunks = self._chunk_content(content)
-
-        # Generate embeddings and store vectors
-        for chunk in chunks:
-            embedding = await self._generate_embedding(chunk)
-            vector = KnowledgeVector(
-                content_id=knowledge_content.id, chunk_text=chunk, embedding=embedding
-            )
-            await self.repository.save_vector(vector)
-
-        # Emit knowledge creation event
-        await self.event_bus.emit(
-            KnowledgeEvent.memory_created(
-                memory_id=str(knowledge_content.id),
-                agent_id=str(agent_id),
-                data={
-                    "name": name,
-                    "content_type": "text",
-                    "chunks_count": len(chunks),
-                    "has_embedding": True,
-                },
-            )
-        )
-
-        return knowledge_content
-
-    async def search_knowledge(
-        self, agent_id: uuid.UUID, query: str, limit: int = 5, threshold: float = 0.7
-    ) -> List[str]:
-        """Search knowledge using vector similarity - Agno's core search pattern"""
-        query_embedding = await self._generate_embedding(query)
-
-        vectors = await self.repository.search_vectors_by_similarity(
-            agent_id=agent_id,
-            embedding=query_embedding,
-            limit=limit,
-            threshold=threshold,
-        )
-
-        # Update access counts for found content
-        content_ids = {vector.content_id for vector in vectors}
-        for content_id in content_ids:
-            await self.repository.update_access_count(content_id)
-
-        # Emit knowledge search event
-        await self.event_bus.emit(
-            KnowledgeEvent.knowledge_searched(
-                agent_id=str(agent_id), query=query, results_count=len(vectors)
-            )
-        )
-
-        return [vector.chunk_text for vector in vectors]
-
-    async def get_agent_knowledge_contents(
-        self, agent_id: uuid.UUID, limit: int = 10
-    ) -> List[KnowledgeContent]:
-        """Get all knowledge contents for an agent"""
-        return await self.repository.get_contents_by_agent(
-            agent_id=agent_id, limit=limit
-        )
-
-    @Transactional()
-    async def delete_content(self, content_id: uuid.UUID) -> bool:
-        """Delete knowledge content and all associated vectors"""
-        success = await self.repository.delete_content(content_id)
-
-        if success:
-            # Emit knowledge deletion event
-            await self.event_bus.emit(
-                KnowledgeEvent(
-                    event_type="memory.deleted",
-                    memory_id=str(content_id),
-                    data={"deleted": True, "content_type": "text"},
-                    source="knowledge_service",
-                )
-            )
-
-        return success
 
     def _chunk_content(self, content: str, max_chunk_size: int = 500) -> List[str]:
         """Simple sentence-based chunking following Agno's approach"""
@@ -166,7 +70,6 @@ class KnowledgeService:
         keywords: Optional[List[str]] = None,
         priority: MemoryPriority = MemoryPriority.MEDIUM,
         context_data: Optional[Dict[str, Any]] = None,
-        related_task_id: Optional[uuid.UUID] = None,
         retention_days: Optional[int] = None,
         generate_embedding: bool = True,
     ) -> AgentMemory:
@@ -196,7 +99,6 @@ class KnowledgeService:
             priority=priority,
             source=source,
             context_data=context_data or {},
-            related_task_id=related_task_id,
             retention_days=retention_days,
             expires_at=expires_at,
         )
@@ -270,11 +172,6 @@ class KnowledgeService:
         return results
 
     @Transactional()
-    async def archive_memory(self, memory_id: uuid.UUID) -> bool:
-        """Archive an agent memory"""
-        return await self.repository.archive_memory(memory_id)
-
-    @Transactional()
     async def create_knowledge_context(
         self,
         agent_id: uuid.UUID,
@@ -322,19 +219,198 @@ class KnowledgeService:
             limit=limit,
         )
 
-    async def get_search_history(
+    # Knowledge Content Methods - Agno-style content database
+
+    @Transactional()
+    async def create_knowledge_content(
         self,
-        agent_id: Optional[uuid.UUID] = None,
-        search_type: Optional[str] = None,
-        session_id: Optional[uuid.UUID] = None,
-        skip: int = 0,
-        limit: int = 50,
-    ) -> List[SemanticSearch]:
-        """Get semantic search history"""
-        return await self.repository.get_search_history(
+        agent_id: uuid.UUID,
+        name: str,
+        content_type: ContentType,
+        content_text: Optional[str] = None,
+        file_path: Optional[str] = None,
+        description: Optional[str] = None,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        generate_embeddings: bool = True,
+    ) -> KnowledgeContent:
+        """Create knowledge content following Agno's content database pattern"""
+        import hashlib
+        import os
+
+        # Calculate file hash if file_path provided
+        file_hash = None
+        file_size = None
+        if file_path and os.path.exists(file_path):
+            with open(file_path, "rb") as f:
+                content_bytes = f.read()
+                file_hash = hashlib.sha256(content_bytes).hexdigest()
+                file_size = len(content_bytes)
+
+                # If no content_text provided, read from file (for text files)
+                if not content_text and content_type in [
+                    ContentType.TEXT,
+                    ContentType.MARKDOWN,
+                ]:
+                    content_text = content_bytes.decode("utf-8")
+
+        content = KnowledgeContent(
             agent_id=agent_id,
-            search_type=search_type,
-            session_id=session_id,
+            name=name,
+            description=description,
+            content_type=content_type,
+            status=ContentStatus.UPLOADED,
+            content_text=content_text,
+            file_path=file_path,
+            file_size=file_size,
+            file_hash=file_hash,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+        saved_content = await self.repository.create_knowledge_content(content)
+
+        # Start processing if we have content_text
+        if content_text and generate_embeddings:
+            await self._process_content(saved_content)
+
+        return saved_content
+
+    async def _process_content(self, content: KnowledgeContent) -> None:
+        """Process content into chunks with embeddings"""
+        try:
+            # Update status to processing
+            await self.repository.update_content_status(
+                content.id, ContentStatus.PROCESSING
+            )
+
+            if not content.content_text:
+                await self.repository.update_content_status(
+                    content.id, ContentStatus.ERROR
+                )
+                return
+
+            # Chunk the content
+            chunks = self._chunk_content_advanced(
+                content.content_text, content.chunk_size, content.chunk_overlap
+            )
+
+            # Update status to chunked
+            await self.repository.update_content_status(
+                content.id, ContentStatus.CHUNKED, len(chunks)
+            )
+
+            # Create chunks with embeddings
+            for i, chunk_text in enumerate(chunks):
+                embedding = await self._generate_embedding(chunk_text)
+
+                chunk = KnowledgeChunk(
+                    content_id=content.id,
+                    agent_id=content.agent_id,
+                    chunk_text=chunk_text,
+                    chunk_index=i,
+                    embedding=embedding,
+                    start_position=None,  # Could calculate if needed
+                    end_position=None,
+                )
+
+                await self.repository.create_knowledge_chunk(chunk)
+
+            # Update final status
+            await self.repository.update_content_status(
+                content.id, ContentStatus.READY, len(chunks)
+            )
+
+            # Emit content processed event
+            await self.event_bus.emit(
+                KnowledgeEvent.content_processed(
+                    content_id=str(content.id),
+                    agent_id=str(content.agent_id),
+                    chunks_count=len(chunks),
+                )
+            )
+
+        except Exception as e:
+            await self.repository.update_content_status(content.id, ContentStatus.ERROR)
+            # Could emit error event here
+            raise e
+
+    def _chunk_content_advanced(
+        self, content: str, chunk_size: int, chunk_overlap: int
+    ) -> List[str]:
+        """Advanced chunking with overlap for better context preservation"""
+        if len(content) <= chunk_size:
+            return [content]
+
+        chunks = []
+        start = 0
+
+        while start < len(content):
+            end = start + chunk_size
+
+            # Try to break at sentence boundaries
+            if end < len(content):
+                # Look for sentence boundary within next 100 chars
+                sentence_end = content.find(". ", end, min(end + 100, len(content)))
+                if sentence_end != -1:
+                    end = sentence_end + 1
+
+            chunk = content[start:end].strip()
+            if chunk:
+                chunks.append(chunk)
+
+            # Move start position with overlap
+            start = end - chunk_overlap
+            if start >= len(content):
+                break
+
+        return chunks
+
+    async def get_knowledge_contents(
+        self,
+        agent_id: uuid.UUID,
+        content_type: Optional[ContentType] = None,
+        status: Optional[ContentStatus] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[KnowledgeContent]:
+        """Get knowledge contents for an agent"""
+        return await self.repository.get_knowledge_contents(
+            agent_id=agent_id,
+            content_type=content_type,
+            status=status,
             skip=skip,
             limit=limit,
         )
+
+    async def search_content_semantic(
+        self,
+        agent_id: uuid.UUID,
+        query: str,
+        similarity_threshold: float = 0.8,
+        limit: int = 10,
+        content_type: Optional[ContentType] = None,
+    ) -> List[Tuple[KnowledgeChunk, KnowledgeContent, float]]:
+        """Search content chunks using semantic similarity - Agentic RAG pattern"""
+        query_embedding = await self._generate_embedding(query)
+
+        results = await self.repository.search_chunks_by_similarity(
+            agent_id=agent_id,
+            embedding=query_embedding,
+            similarity_threshold=similarity_threshold,
+            limit=limit,
+            content_type=content_type,
+        )
+
+        # Emit search event
+        await self.event_bus.emit(
+            KnowledgeEvent.knowledge_searched(
+                agent_id=str(agent_id), query=query, results_count=len(results)
+            )
+        )
+
+        return results
+
+    async def delete_knowledge_content(self, content_id: uuid.UUID) -> bool:
+        """Delete knowledge content and all its chunks"""
+        return await self.repository.delete_knowledge_content(content_id)

@@ -72,3 +72,14 @@ class KnowledgeEvent(BaseEvent):
             data={"query": query, "results_count": results_count},
             source="knowledge_service",
         )
+
+    @classmethod
+    def content_processed(
+        cls, content_id: str, agent_id: str, chunks_count: int = 0
+    ) -> "KnowledgeEvent":
+        return cls(
+            event_type=KnowledgeEventType.CONTENT_PROCESSED,
+            agent_id=agent_id,
+            data={"content_id": content_id, "chunks_count": chunks_count},
+            source="knowledge_service",
+        )

@@ -13,3 +13,4 @@ class KnowledgeEventType(str, Enum):
     MEMORY_DELETED = "memory.deleted"
     MEMORY_ACCESSED = "memory.accessed"
     KNOWLEDGE_SEARCHED = "knowledge.searched"
+    CONTENT_PROCESSED = "content.processed"

@@ -3,60 +3,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
-class AddContentRequest(BaseModel):
-    """Request to add knowledge content"""
-
-    name: str = Field(..., description="Name of the knowledge content")
-    content: str = Field(..., description="The actual content to be stored")
-    description: Optional[str] = Field(None, description="Description of the content")
-
-
-class AddContentResponse(BaseModel):
-    """Response after adding knowledge content"""
-
-    id: str = Field(..., description="Content ID")
-    name: str = Field(..., description="Content name")
-    agent_id: str = Field(..., description="Agent ID")
-
-
-class SearchKnowledgeRequest(BaseModel):
-    """Request to search knowledge"""
-
-    query: str = Field(..., description="Search query")
-    limit: int = Field(default=5, description="Maximum number of results", ge=1, le=20)
-    threshold: float = Field(
-        default=0.7, description="Similarity threshold", ge=0.0, le=1.0
-    )
-
-
-class SearchKnowledgeResponse(BaseModel):
-    """Response with search results"""
-
-    results: List[str] = Field(..., description="List of relevant content chunks")
-    query: str = Field(..., description="Original search query")
-
-
-class KnowledgeContentResponse(BaseModel):
-    """Knowledge content information"""
-
-    model_config = {"from_attributes": True}
-
-    id: str = Field(..., description="Content ID")
-    name: str = Field(..., description="Content name")
-    description: Optional[str] = Field(None, description="Content description")
-    content_type: str = Field(..., description="Type of content")
-    access_count: int = Field(..., description="Number of times accessed")
-    created_at: str = Field(..., description="Creation timestamp")
-
-
-class DeleteContentResponse(BaseModel):
-    """Response after deleting content"""
-
-    success: bool = Field(..., description="Whether deletion was successful")
-    message: str = Field(..., description="Status message")
-
-
-# Enhanced Knowledge Schemas
+# Knowledge Schemas
 
 
 class AgentMemoryCreate(BaseModel):
@@ -71,7 +18,6 @@ class AgentMemoryCreate(BaseModel):
     context_data: Optional[Dict[str, Any]] = Field(
         None, description="Additional context data"
     )
-    related_task_id: Optional[str] = Field(None, description="Related task ID")
     retention_days: Optional[int] = Field(None, description="Days to retain the memory")
     generate_embedding: bool = Field(
         default=True, description="Generate vector embedding"
@@ -172,23 +118,108 @@ class KnowledgeContextsListResponse(BaseModel):
     limit: int = Field(..., description="Limit applied")
 
 
-class SemanticSearchResponse(BaseModel):
-    """Semantic search response"""
+# Knowledge Content Schemas
+
+
+class KnowledgeContentCreate(BaseModel):
+    """Request to create knowledge content"""
+
+    name: str = Field(..., description="Content name")
+    description: Optional[str] = Field(None, description="Content description")
+    content_type: str = Field(..., description="Type of content")
+    content_text: Optional[str] = Field(None, description="Text content")
+    file_path: Optional[str] = Field(None, description="File path")
+    chunk_size: int = Field(default=1000, description="Chunk size for processing")
+    chunk_overlap: int = Field(default=200, description="Overlap between chunks")
+    generate_embeddings: bool = Field(
+        default=True, description="Generate embeddings for chunks"
+    )
+
+
+class KnowledgeContentResponse(BaseModel):
+    """Knowledge content response"""
 
     model_config = {"from_attributes": True}
 
-    id: str = Field(..., description="Search ID")
-    query: str = Field(..., description="Search query")
-    search_type: str = Field(..., description="Search type")
-    results_count: int = Field(..., description="Number of results")
-    execution_time: Optional[float] = Field(None, description="Execution time")
+    id: str = Field(..., description="Content ID")
+    agent_id: str = Field(..., description="Agent ID")
+    name: str = Field(..., description="Content name")
+    description: Optional[str] = Field(None, description="Content description")
+    content_type: str = Field(..., description="Content type")
+    status: str = Field(..., description="Processing status")
+    file_size: Optional[int] = Field(None, description="File size in bytes")
+    chunk_size: int = Field(..., description="Chunk size")
+    chunk_overlap: int = Field(..., description="Chunk overlap")
+    total_chunks: int = Field(..., description="Total number of chunks")
+    access_count: int = Field(..., description="Access count")
     created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Update timestamp")
 
 
-class SearchHistoryListResponse(BaseModel):
-    """Response with search history"""
+class KnowledgeContentUpdate(BaseModel):
+    """Request to update knowledge content"""
 
-    searches: List[SemanticSearchResponse] = Field(..., description="List of searches")
+    name: Optional[str] = Field(None, description="Content name")
+    description: Optional[str] = Field(None, description="Content description")
+
+
+class KnowledgeContentListResponse(BaseModel):
+    """Response with list of knowledge content"""
+
+    contents: List[KnowledgeContentResponse] = Field(..., description="List of content")
     total: int = Field(..., description="Total count")
     skip: int = Field(..., description="Skipped items")
     limit: int = Field(..., description="Limit applied")
+
+
+class KnowledgeChunkResponse(BaseModel):
+    """Knowledge chunk response"""
+
+    model_config = {"from_attributes": True}
+
+    id: str = Field(..., description="Chunk ID")
+    content_id: str = Field(..., description="Content ID")
+    chunk_text: str = Field(..., description="Chunk text")
+    chunk_index: int = Field(..., description="Chunk index")
+    keywords: Optional[List[str]] = Field(None, description="Chunk keywords")
+    summary: Optional[str] = Field(None, description="Chunk summary")
+    start_position: Optional[int] = Field(None, description="Start position in content")
+    end_position: Optional[int] = Field(None, description="End position in content")
+
+
+class ContentSearchRequest(BaseModel):
+    """Request to search content chunks"""
+
+    query: str = Field(..., description="Search query")
+    similarity_threshold: float = Field(
+        default=0.8, description="Similarity threshold", ge=0.0, le=1.0
+    )
+    limit: int = Field(default=10, description="Maximum results", ge=1, le=100)
+    content_type: Optional[str] = Field(None, description="Filter by content type")
+
+
+class ContentSearchResult(BaseModel):
+    """Single content search result"""
+
+    chunk: KnowledgeChunkResponse = Field(..., description="The chunk")
+    content: KnowledgeContentResponse = Field(..., description="The content metadata")
+    similarity: float = Field(..., description="Similarity score")
+
+
+class ContentSearchResponse(BaseModel):
+    """Response with content search results"""
+
+    results: List[ContentSearchResult] = Field(..., description="Search results")
+    query: str = Field(..., description="Original query")
+    total_results: int = Field(..., description="Total number of results")
+
+
+class ContentProcessingStatus(BaseModel):
+    """Content processing status response"""
+
+    content_id: str = Field(..., description="Content ID")
+    status: str = Field(..., description="Processing status")
+    progress: float = Field(..., description="Processing progress (0-1)")
+    chunks_processed: int = Field(..., description="Number of chunks processed")
+    total_chunks: int = Field(..., description="Total chunks to process")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
