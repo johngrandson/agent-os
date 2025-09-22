@@ -48,11 +48,6 @@ def setup_logging(level: str = "INFO") -> Dict[str, Any]:
                 "handlers": ["console"],
                 "propagate": False,
             },
-            "app.workflows": {
-                "level": level,
-                "handlers": ["console"],
-                "propagate": False,
-            },
             "app.initialization": {
                 "level": level,
                 "handlers": ["console"],

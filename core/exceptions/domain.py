@@ -61,15 +61,3 @@ class AgentConfigAlreadyExists(AgentConfigException):
     code = 409
     error_code = "AGENT_CONFIG_ALREADY_EXISTS"
     message = "Agent configuration already exists for this agent"
-
-
-class WebhookException(DomainException):
-    """Webhook-related exceptions"""
-
-    pass
-
-
-class WebhookProcessingError(WebhookException):
-    code = 500
-    error_code = "WEBHOOK_PROCESSING_ERROR"
-    message = "Failed to process webhook data"
