@@ -3,7 +3,6 @@
 import uuid
 from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
-from app.agents.roles import AgentRole, AgentSpecialization
 
 
 # Request Models
@@ -15,10 +14,6 @@ class CreateAgentRequest(BaseModel):
     description: Optional[str] = Field(None, description="Agent description")
     instructions: Optional[List[str]] = Field(None, description="Agent instructions")
     is_active: bool = Field(default=False, description="Agent active status")
-    role: Optional[AgentRole] = Field(None, description="Agent role")
-    specialization: Optional[AgentSpecialization] = Field(
-        None, description="Agent specialization"
-    )
     available_tools: Optional[List[str]] = Field(None, description="Available tools")
     tool_configurations: Optional[Dict[str, Any]] = Field(
         None, description="Tool configurations"
@@ -33,10 +28,6 @@ class UpdateAgentRequest(BaseModel):
     description: Optional[str] = Field(None, description="Agent description")
     instructions: Optional[List[str]] = Field(None, description="Agent instructions")
     is_active: bool = Field(None, description="Agent active status")
-    role: Optional[AgentRole] = Field(None, description="Agent role")
-    specialization: Optional[AgentSpecialization] = Field(
-        None, description="Agent specialization"
-    )
     available_tools: Optional[List[str]] = Field(None, description="Available tools")
     tool_configurations: Optional[Dict[str, Any]] = Field(
         None, description="Tool configurations"
@@ -75,8 +66,6 @@ class AgentResponse(BaseModel):
     description: Optional[str] = Field(None, description="Agent description")
     instructions: Optional[List[str]] = Field(None, description="Agent instructions")
     is_active: bool = Field(..., description="Agent active status")
-    role: Optional[str] = Field(None, description="Agent role")
-    specialization: Optional[str] = Field(None, description="Agent specialization")
     available_tools: Optional[List[str]] = Field(None, description="Available tools")
     tool_configurations: Optional[Dict[str, Any]] = Field(
         None, description="Tool configurations"
@@ -116,8 +105,6 @@ class CreateAgentCommand(BaseModel):
     description: Optional[str] = None
     instructions: Optional[List[str]] = None
     is_active: bool
-    role: Optional[str] = None
-    specialization: Optional[str] = None
     available_tools: Optional[List[str]] = None
     tool_configurations: Optional[Dict[str, Any]] = None
 
@@ -131,8 +118,6 @@ class UpdateAgentCommand(BaseModel):
     description: Optional[str] = None
     instructions: Optional[List[str]] = None
     is_active: bool
-    role: Optional[str] = None
-    specialization: Optional[str] = None
     available_tools: Optional[List[str]] = None
     tool_configurations: Optional[Dict[str, Any]] = None
 
@@ -143,8 +128,6 @@ class AgentCapabilitiesResponse(BaseModel):
 
     agent_id: str
     name: str
-    role: Optional[str] = None
-    specialization: Optional[str] = None
     available_tools: List[str] = []
     tool_definitions: List[Dict[str, Any]] = []
     tool_configurations: Dict[str, Any] = {}
@@ -167,10 +150,3 @@ class AgentToolExecutionResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     execution_time: Optional[float] = None
-
-
-class AgentRolesResponse(BaseModel):
-    """Available agent roles and specializations"""
-
-    roles: List[Dict[str, str]]
-    specializations: List[Dict[str, str]]

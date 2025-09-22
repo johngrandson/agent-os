@@ -3,13 +3,6 @@ import uuid
 from app.agents.repositories.agent_repository import AgentRepository
 from app.agents.api.schemas import CreateAgentCommand, UpdateAgentCommand
 from app.agents.agent import Agent
-from app.agents.roles import (
-    AgentRole,
-    AgentSpecialization,
-    get_role_tools,
-    get_specialization_tools,
-    get_role_instructions,
-)
 from app.tools.registry import ToolRegistry
 from app.events.bus import EventBus
 from app.agents.events import AgentEvent
@@ -47,28 +40,8 @@ class AgentService:
 
             raise AgentAlreadyExists()
 
-        # Auto-configure tools and instructions based on role/specialization
-        available_tools = command.available_tools or []
-        instructions = command.instructions or []
-
-        if command.role:
-            role_tools = get_role_tools(AgentRole(command.role))
-            available_tools.extend(
-                [tool for tool in role_tools if tool not in available_tools]
-            )
-
-            if not instructions:
-                instructions = get_role_instructions(AgentRole(command.role))
-
-        if command.specialization:
-            spec_tools = get_specialization_tools(
-                AgentSpecialization(command.specialization)
-            )
-            available_tools.extend(
-                [tool for tool in spec_tools if tool not in available_tools]
-            )
-
         # Validate tools exist in registry
+        available_tools = command.available_tools or []
         available_tools = [
             tool for tool in available_tools if self.tool_registry.get_tool(tool)
         ]
@@ -77,14 +50,12 @@ class AgentService:
             name=command.name,
             phone_number=command.phone_number,
             description=command.description,
-            instructions=instructions,
+            instructions=command.instructions,
             is_active=command.is_active,
-            role=command.role,
-            specialization=command.specialization,
             available_tools=available_tools,
             tool_configurations=command.tool_configurations,
         )
-        await self.repository.save(agent=agent)
+        await self.repository.create_agent(agent=agent)
 
         # Emit agent creation event
         await self.event_bus.emit(
@@ -92,8 +63,6 @@ class AgentService:
                 agent_id=str(agent.id),
                 data={
                     "name": agent.name,
-                    "role": agent.role,
-                    "specialization": agent.specialization,
                     "available_tools": agent.available_tools,
                     "is_active": agent.is_active,
                 },
@@ -133,32 +102,15 @@ class AgentService:
         agent.description = command.description
         agent.instructions = command.instructions
         agent.is_active = command.is_active
-        agent.role = command.role
-        agent.specialization = command.specialization
         agent.available_tools = command.available_tools
         agent.tool_configurations = command.tool_configurations
 
-        # Auto-configure tools if role/specialization changed
-        if command.role or command.specialization:
-            available_tools = command.available_tools or []
-
-            if command.role:
-                role_tools = get_role_tools(AgentRole(command.role))
-                available_tools.extend(
-                    [tool for tool in role_tools if tool not in available_tools]
-                )
-
-            if command.specialization:
-                spec_tools = get_specialization_tools(
-                    AgentSpecialization(command.specialization)
-                )
-                available_tools.extend(
-                    [tool for tool in spec_tools if tool not in available_tools]
-                )
-
-            # Validate tools exist in registry
+        # Validate tools exist in registry
+        if agent.available_tools:
             agent.available_tools = [
-                tool for tool in available_tools if self.tool_registry.get_tool(tool)
+                tool
+                for tool in agent.available_tools
+                if self.tool_registry.get_tool(tool)
             ]
 
         await self.repository.update(agent=agent)
@@ -169,8 +121,6 @@ class AgentService:
                 agent_id=str(agent.id),
                 data={
                     "name": agent.name,
-                    "role": agent.role,
-                    "specialization": agent.specialization,
                     "available_tools": agent.available_tools,
                     "is_active": agent.is_active,
                 },
@@ -189,8 +139,6 @@ class AgentService:
         # Store agent data before deletion for event
         agent_data = {
             "name": agent.name,
-            "role": agent.role,
-            "specialization": agent.specialization,
         }
 
         await self.repository.delete(agent=agent)
@@ -229,8 +177,6 @@ class AgentService:
         return {
             "agent_id": str(agent.id),
             "name": agent.name,
-            "role": agent.role,
-            "specialization": agent.specialization,
             "available_tools": agent.available_tools or [],
             "tool_definitions": tool_definitions,
             "tool_configurations": agent.tool_configurations or {},

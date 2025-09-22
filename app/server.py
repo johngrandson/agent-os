@@ -14,12 +14,8 @@ from app.knowledge.api.routers import knowledge_router
 
 # Enhanced knowledge now integrated into main knowledge router
 from app.tools.api.routers import router as tool_router
-from app.tasks.api.routers import router as task_router
 from app.events.api.routers import router as event_router
 from app.events.api.websocket_router import router as websocket_router
-from app.integrations.api.routers import router as integration_router
-from app.teams.api.routers import router as team_router
-from app.workflows.api.routers import router as workflow_router
 from app.startup import StartupManager
 
 from core.exceptions import CustomException
@@ -72,14 +68,10 @@ def setup_routes(app: FastAPI):
         return {"status": "healthy", "service": "agent-os"}
 
     app.include_router(agent_router, prefix="/api/v1/agents")
-    app.include_router(knowledge_router, prefix="/api/v1/knowledge")
+    app.include_router(knowledge_router, prefix="/api/v1")
     app.include_router(tool_router, prefix="/api/v1")
-    app.include_router(task_router, prefix="/api/v1")
     app.include_router(event_router, prefix="/api/v1")
     app.include_router(websocket_router, prefix="/api/v1")
-    app.include_router(integration_router, prefix="/api/v1")
-    app.include_router(team_router, prefix="/api/v1")
-    app.include_router(workflow_router, prefix="/api/v1")
 
 
 def setup_dependency_injection(container: ApplicationContainer):
@@ -89,19 +81,11 @@ def setup_dependency_injection(container: ApplicationContainer):
             "app.agents.api.routers",
             "app.knowledge.api.routers",
             "app.tools.api.routers",
-            "app.tasks.api.routers",
-            "app.integrations.api.routers",
-            "app.teams.api.routers",
-            "app.workflows.api.routers",
         ]
     )
     agent_router.container = container
     knowledge_router.container = container
     tool_router.container = container
-    task_router.container = container
-    integration_router.container = container
-    team_router.container = container
-    workflow_router.container = container
 
 
 def create_app() -> FastAPI:

@@ -14,7 +14,6 @@ from app.agents.api.schemas import (
     AgentCapabilitiesResponse,
     AgentToolExecutionRequest,
     AgentToolExecutionResponse,
-    AgentRolesResponse,
 )
 from app.agents.services.agent_service import AgentService
 from core.exceptions.domain import AgentNotFound
@@ -245,25 +244,3 @@ async def execute_agent_tool(
         raise HTTPException(status_code=400, detail=result["error"])
 
     return result
-
-
-@agent_router.get(
-    "/metadata/roles",
-    response_model=AgentRolesResponse,
-    summary="Get available roles and specializations",
-    description="Get list of available agent roles and specializations",
-)
-async def get_agent_roles():
-    """Get available agent roles and specializations"""
-    from app.agents.roles import AgentRole, AgentSpecialization
-
-    roles = [
-        {"value": role.value, "name": role.value.replace("_", " ").title()}
-        for role in AgentRole
-    ]
-    specializations = [
-        {"value": spec.value, "name": spec.value.replace("_", " ").title()}
-        for spec in AgentSpecialization
-    ]
-
-    return {"roles": roles, "specializations": specializations}
