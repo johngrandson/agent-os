@@ -1,0 +1,66 @@
+# Common environment variables
+x-environment: &common-env
+  ENV: dev
+  DEBUG: true
+
+x-build: &common-build
+  context: ..
+  target: development
+
+services:
+  # PostgreSQL Database with pgvector
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: fastapi-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../.env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi -d fastapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # FastAPI Application
+  api:
+    build: *common-build
+    container_name: fastapi-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/app
+    user: "1000:1000"
+    env_file:
+      - ../.env
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      sh -c "poetry install --no-root &&
+      poetry run uvicorn app.server:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app/app
+      --reload-dir /app/core
+      --reload-dir /app/infrastructure
+      --log-level info
+      --access-log"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
