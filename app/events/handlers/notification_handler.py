@@ -34,19 +34,11 @@ class NotificationEventHandler(EventHandler):
     def can_handle(self, event_type: str) -> bool:
         """Handle specific event types that should create notifications"""
         notification_events = {
-            EventType.TASK_CREATED,
-            EventType.TASK_ASSIGNED,
-            EventType.TASK_STARTED,
-            EventType.TASK_COMPLETED,
-            EventType.TASK_FAILED,
             EventType.AGENT_CREATED,
             EventType.AGENT_ACTIVATED,
             EventType.AGENT_DEACTIVATED,
             EventType.TOOL_EXECUTED,
             EventType.TOOL_FAILED,
-            EventType.INTEGRATION_CREATED,
-            EventType.INTEGRATION_UPDATED,
-            EventType.INTEGRATION_DELETED,
             EventType.SYSTEM_ALERT,
             EventType.SYSTEM_ERROR,
         }
@@ -74,19 +66,11 @@ class NotificationEventHandler(EventHandler):
         """Get notification title based on event type"""
 
         title_map = {
-            EventType.TASK_CREATED: "Nova Tarefa Criada",
-            EventType.TASK_ASSIGNED: "Tarefa Atribuída",
-            EventType.TASK_STARTED: "Tarefa Iniciada",
-            EventType.TASK_COMPLETED: "Tarefa Concluída",
-            EventType.TASK_FAILED: "Tarefa Falhhou",
             EventType.AGENT_CREATED: "Novo Agente Criado",
             EventType.AGENT_ACTIVATED: "Agente Ativado",
             EventType.AGENT_DEACTIVATED: "Agente Desativado",
             EventType.TOOL_EXECUTED: "Ferramenta Executada",
             EventType.TOOL_FAILED: "Falha na Ferramenta",
-            EventType.INTEGRATION_CREATED: "Nova Integração Criada",
-            EventType.INTEGRATION_UPDATED: "Integração Atualizada",
-            EventType.INTEGRATION_DELETED: "Integração Removida",
             EventType.SYSTEM_ALERT: "Alerta do Sistema",
             EventType.SYSTEM_ERROR: "Erro do Sistema",
         }
@@ -96,44 +80,13 @@ class NotificationEventHandler(EventHandler):
     def _get_notification_message(self, event: BaseEvent) -> str:
         """Get notification message based on event"""
 
-        if event.event_type == EventType.TASK_CREATED:
-            task_id = getattr(event, "task_id", "Unknown")
-            return f"Nova tarefa criada: {task_id}"
-
-        elif event.event_type == EventType.TASK_ASSIGNED:
-            task_id = getattr(event, "task_id", "Unknown")
-            agent_id = getattr(event, "agent_id", "Unknown")
-            return f"Tarefa {task_id} atribuída ao agente {agent_id}"
-
-        elif event.event_type == EventType.TASK_COMPLETED:
-            task_id = getattr(event, "task_id", "Unknown")
-            return f"Tarefa {task_id} foi concluída com sucesso"
-
-        elif event.event_type == EventType.TASK_FAILED:
-            task_id = getattr(event, "task_id", "Unknown")
-            error = event.data.get("error", "Erro desconhecido")
-            return f"Tarefa {task_id} falhou: {error}"
-
-        elif event.event_type == EventType.AGENT_CREATED:
+        if event.event_type == EventType.AGENT_CREATED:
             agent_id = getattr(event, "agent_id", "Unknown")
             return f"Novo agente criado: {agent_id}"
 
         elif event.event_type == EventType.TOOL_EXECUTED:
             tool_name = getattr(event, "tool_name", "Unknown")
             return f"Ferramenta {tool_name} executada"
-
-        elif event.event_type == EventType.INTEGRATION_CREATED:
-            integration_id = event.data.get("integration_id", "Unknown")
-            integration_name = event.data.get("name", integration_id)
-            return f"Nova integração criada: {integration_name}"
-
-        elif event.event_type == EventType.INTEGRATION_UPDATED:
-            integration_id = event.data.get("integration_id", "Unknown")
-            return f"Integração {integration_id} foi atualizada"
-
-        elif event.event_type == EventType.INTEGRATION_DELETED:
-            integration_id = event.data.get("integration_id", "Unknown")
-            return f"Integração {integration_id} foi removida"
 
         elif event.event_type == EventType.SYSTEM_ERROR:
             error = event.data.get("error", "Erro desconhecido")

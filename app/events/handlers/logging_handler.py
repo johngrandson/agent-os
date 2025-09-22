@@ -63,13 +63,7 @@ class LoggingEventHandler(EventHandler):
             base_msg += f" to {event.target}"
 
         # Add specific information based on event type
-        if event.event_type.startswith("task."):
-            if "task_id" in event.data:
-                base_msg += f" (Task: {event.data['task_id']})"
-            elif hasattr(event, "task_id"):
-                base_msg += f" (Task: {event.task_id})"
-
-        elif event.event_type.startswith("agent."):
+        if event.event_type.startswith("agent."):
             if "agent_id" in event.data:
                 base_msg += f" (Agent: {event.data['agent_id']})"
             elif hasattr(event, "agent_id"):
