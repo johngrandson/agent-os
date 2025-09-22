@@ -11,7 +11,6 @@ from infrastructure.database import Base
 from infrastructure.database.mixins import TimestampMixin
 
 
-
 class Agent(Base, TimestampMixin):
     __tablename__ = "agents"
 
@@ -27,7 +26,6 @@ class Agent(Base, TimestampMixin):
     # Tool configuration fields
     available_tools: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     tool_configurations: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-
 
     @classmethod
     def create(
