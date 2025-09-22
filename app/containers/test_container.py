@@ -18,8 +18,6 @@ class TestContainer(DeclarativeContainer):
     openai_client = Singleton(AsyncMock)
     event_bus = Singleton(MagicMock, spec=EventBus)
     tool_registry = Singleton(MagicMock, spec=ToolRegistry)
-    integration_service = Singleton(MagicMock)
-
     # Mocked session factories
     writer_session_factory = Singleton(AsyncMock)
     reader_session_factory = Singleton(AsyncMock)
@@ -27,8 +25,6 @@ class TestContainer(DeclarativeContainer):
     # Mocked repositories
     agent_repository = Singleton(MagicMock)
     knowledge_repository = Singleton(MagicMock)
-    task_repository = Singleton(MagicMock)
-    team_repository = Singleton(MagicMock)
 
     # Test services with mocked dependencies
     agent_service = Singleton(
@@ -42,35 +38,6 @@ class TestContainer(DeclarativeContainer):
         ServicesContainer.knowledge_service,
         repository=knowledge_repository,
         openai_client=openai_client,
-        event_bus=event_bus,
-    )
-
-    task_service = Singleton(
-        ServicesContainer.task_service,
-        task_repository=task_repository,
-        agent_repository=agent_repository,
-        event_bus=event_bus,
-        tool_registry=tool_registry,
-    )
-
-    team_service = Singleton(
-        ServicesContainer.team_service,
-        team_repository=team_repository,
-        event_bus=event_bus,
-    )
-
-    # Workflow services
-    workflow_engine = Singleton(
-        ServicesContainer.workflow_engine,
-        event_bus=event_bus,
-        task_service=task_service,
-        integration_service=integration_service,
-        agent_service=agent_service,
-    )
-
-    workflow_service = Singleton(
-        ServicesContainer.workflow_service,
-        workflow_engine=workflow_engine,
         event_bus=event_bus,
     )
 

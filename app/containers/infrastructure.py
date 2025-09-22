@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.events.bus import EventBus
 from app.tools.registry import ToolRegistry
-from app.integrations.services import IntegrationService
 from core.config import get_config
 
 
@@ -81,9 +80,3 @@ class InfrastructureContainer(DeclarativeContainer):
     # Core infrastructure with thread safety
     event_bus = ThreadSafeSingleton(EventBus)
     tool_registry = ThreadSafeSingleton(ToolRegistry, event_bus=event_bus)
-
-    # Integration service
-    integration_service = ThreadSafeSingleton(
-        IntegrationService,
-        event_bus=event_bus,
-    )

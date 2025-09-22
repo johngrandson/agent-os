@@ -1,5 +1,5 @@
 from dependency_injector.containers import DeclarativeContainer, WiringConfiguration
-from dependency_injector.providers import Singleton, ThreadSafeSingleton
+from dependency_injector.providers import ThreadSafeSingleton
 
 from app.containers.infrastructure import InfrastructureContainer
 from app.containers.repositories import RepositoriesContainer
@@ -20,7 +20,6 @@ class ApplicationContainer(DeclarativeContainer):
     openai_client = infrastructure.openai_client
     event_bus = infrastructure.event_bus
     tool_registry = infrastructure.tool_registry
-    integration_service = infrastructure.integration_service
     config_resource = infrastructure.config_resource
     writer_engine = infrastructure.writer_engine
     reader_engine = infrastructure.reader_engine
@@ -28,8 +27,6 @@ class ApplicationContainer(DeclarativeContainer):
     # Repositories
     agent_repository = repositories.agent_repository
     knowledge_repository = repositories.knowledge_repository
-    task_repository = repositories.task_repository
-    team_repository = repositories.team_repository
 
     # Domain services with thread-safe dependency injection
     agent_service = ThreadSafeSingleton(
@@ -43,35 +40,6 @@ class ApplicationContainer(DeclarativeContainer):
         services.knowledge_service,
         repository=knowledge_repository,
         openai_client=openai_client,
-        event_bus=event_bus,
-    )
-
-    task_service = ThreadSafeSingleton(
-        services.task_service,
-        task_repository=task_repository,
-        agent_repository=agent_repository,
-        event_bus=event_bus,
-        tool_registry=tool_registry,
-    )
-
-    team_service = ThreadSafeSingleton(
-        services.team_service,
-        team_repository=team_repository,
-        event_bus=event_bus,
-    )
-
-    # Workflow services with thread safety
-    workflow_engine = ThreadSafeSingleton(
-        services.workflow_engine,
-        event_bus=event_bus,
-        task_service=task_service,
-        integration_service=integration_service,
-        agent_service=agent_service,
-    )
-
-    workflow_service = ThreadSafeSingleton(
-        services.workflow_service,
-        workflow_engine=workflow_engine,
         event_bus=event_bus,
     )
 
