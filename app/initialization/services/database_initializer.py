@@ -30,16 +30,12 @@ class DatabaseInitializer:
         Order matters! Import knowledge models first, then other models that reference them
         """
         from app.knowledge.knowledge import (
-            KnowledgeContent,
-            KnowledgeVector,
             AgentMemory,
             KnowledgeContext,
-            SemanticSearch,
+            KnowledgeContent,
+            KnowledgeChunk,
         )
         from app.agents.agent import Agent
-        from app.tasks.task import Task
-        from app.teams.models import Team
-        from app.integrations.models import Integration
 
     async def initialize(self):
         """Initialize database tables"""
