@@ -18,24 +18,10 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from infrastructure.database import Base
 from app.agents.agent import Agent
-from app.knowledge.knowledge import KnowledgeContent, KnowledgeVector
-from app.teams.models import (
-    Team,
-    TeamTask,
-    TeamCoordination,
-    team_members,
-)
-from app.knowledge.models import (
+
+from app.knowledge.knowledge import (
     AgentMemory,
     KnowledgeContext,
-    SemanticSearch,
-)
-from app.tasks.task import Task
-from app.integrations.models import (
-    Integration,
-    IntegrationLog,
-    WebhookEndpoint,
-    WebhookDelivery,
 )
 
 target_metadata = Base.metadata
