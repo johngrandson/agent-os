@@ -33,7 +33,6 @@ class TestContainer(DeclarativeContainer):
         tool_registry=tool_registry,
     )
 
-
     @classmethod
     def override_providers_for_test(cls, **overrides):
         """Helper method to override specific providers for testing"""

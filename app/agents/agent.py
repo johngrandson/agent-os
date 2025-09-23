@@ -65,3 +65,4 @@ class AgentRead(BaseModel):
     is_active: bool = Field(..., title="Is Active")
     available_tools: Optional[List[str]] = Field(None, title="Available Tools")
     tool_configurations: Optional[dict] = Field(None, title="Tool Configurations")
+    knowledge_config: Optional[dict] = Field(None, title="Knowledge Configuration")

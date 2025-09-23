@@ -25,8 +25,7 @@ class DatabaseInitializer:
             load_dotenv(override=True)
 
     def _import_models(self):
-        """Import all models to ensure they are registered with SQLAlchemy
-        """
+        """Import all models to ensure they are registered with SQLAlchemy"""
         from app.agents.agent import Agent
 
     async def initialize(self):

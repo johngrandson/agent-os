@@ -25,7 +25,6 @@ class EventType(str, Enum):
     TOOL_EXECUTED = ToolEventType.TOOL_EXECUTED
     TOOL_FAILED = ToolEventType.TOOL_FAILED
 
-
     # System Events
     SYSTEM_ALERT = "system.alert"
     SYSTEM_ERROR = "system.error"

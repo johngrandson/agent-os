@@ -19,10 +19,7 @@ if config.config_file_name is not None:
 from infrastructure.database import Base
 from app.agents.agent import Agent
 
-from app.knowledge.knowledge import (
-    AgentMemory,
-    KnowledgeContext,
-)
+# Knowledge models removed after knowledge system reset
 
 target_metadata = Base.metadata
 

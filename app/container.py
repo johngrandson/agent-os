@@ -35,7 +35,6 @@ class ApplicationContainer(DeclarativeContainer):
         tool_registry=tool_registry,
     )
 
-
     # Initialization services
     database_initializer = services.database_initializer
 
