@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
-from sqlalchemy import String, JSON, Text
+from sqlalchemy import String, JSON
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from infrastructure.database import Base
 from infrastructure.database.mixins import TimestampMixin

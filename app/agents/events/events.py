@@ -56,3 +56,14 @@ class AgentEvent(BaseEvent):
             source="agent_service",
             priority=EventPriority.HIGH,
         )
+
+    @classmethod
+    def agent_knowledge_created(
+        cls, agent_id: str, data: Dict[str, Any] = None
+    ) -> "AgentEvent":
+        return cls(
+            event_type=AgentEventType.AGENT_KNOWLEDGE_CREATED,
+            agent_id=agent_id,
+            data=data or {},
+            source="knowledge_factory",
+        )

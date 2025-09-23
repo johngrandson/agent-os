@@ -11,7 +11,7 @@ UVICORN := poetry run uvicorn
 APP_MODULE := app.server:app
 HOST := 0.0.0.0
 PORT := 8000
-DOCKER_COMPOSE_FILE := docker/docker-compose.yml
+DOCKER_COMPOSE_FILE := infrastructure/docker/docker-compose.yml
 
 help: ## Show this help message
 	@echo "🚀 Agent OS - Available Commands:"

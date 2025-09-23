@@ -13,3 +13,4 @@ class AgentEventType(str, Enum):
     AGENT_DELETED = "agent.deleted"
     AGENT_ACTIVATED = "agent.activated"
     AGENT_DEACTIVATED = "agent.deactivated"
+    AGENT_KNOWLEDGE_CREATED = "agent.knowledge_created"

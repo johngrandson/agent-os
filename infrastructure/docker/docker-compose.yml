@@ -4,7 +4,8 @@ x-environment: &common-env
   DEBUG: true
 
 x-build: &common-build
-  context: ..
+  context: ../..
+  dockerfile: infrastructure/docker/Dockerfile
   target: development
 
 services:
@@ -16,9 +17,9 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - ../.env
+      - ../../.env
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fastapi -d fastapi"]
@@ -34,10 +35,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ..:/app
+      - ../..:/app
     user: "1000:1000"
     env_file:
-      - ../.env
+      - ../../.env
     environment:
       <<: *common-env
       PYTHONPATH: /app

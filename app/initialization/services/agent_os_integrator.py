@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from app.agents.repositories.agent_repository import AgentRepository
 from app.knowledge.services.agent_knowledge_factory import AgentKnowledgeFactory
+from app.events.bus import EventBus
 from agno.agent import Agent as AgnoAgent
 from agno.models.openai import OpenAIChat
 from agno.os import AgentOS
@@ -19,13 +20,13 @@ load_dotenv()
 class AgentOSIntegrator:
     """Loads agents from database and integrates with AgentOS"""
 
-    def __init__(self, agent_repository: AgentRepository):
+    def __init__(self, agent_repository: AgentRepository, event_bus: EventBus):
         self.agent_repository = agent_repository
         self.loaded_agents = []
         self.agno_agents = []
 
         db_url = os.getenv("AGNO_DB_URL", "")
-        self.knowledge_factory = AgentKnowledgeFactory(db_url)
+        self.knowledge_factory = AgentKnowledgeFactory(db_url, event_bus)
 
     async def load_agents_from_database(self):
         """Load agents from database and convert to AgentOS format"""
@@ -40,13 +41,12 @@ class AgentOSIntegrator:
 
         # Store the DB agents
         self.loaded_agents = db_agents
-
         self.agno_agents = []
+
         for db_agent in db_agents:
             knowledge = await self.knowledge_factory.create_knowledge_for_agent(
                 agent_id=str(db_agent.id),
                 agent_name=db_agent.name,
-                knowledge_config=db_agent.knowledge_config,
             )
 
             agent_knowledge_filters = {
@@ -59,7 +59,6 @@ class AgentOSIntegrator:
                 knowledge=knowledge,
                 search_knowledge=True,
                 knowledge_filters=agent_knowledge_filters,
-                enable_agentic_knowledge_filters=False,
                 model=OpenAIChat(id=os.getenv("AGNO_DEFAULT_MODEL", "gpt-4o-mini")),
             )
             self.agno_agents.append(agno_agent)

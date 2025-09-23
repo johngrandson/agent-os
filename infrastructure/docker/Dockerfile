@@ -34,7 +34,7 @@ COPY pyproject.toml poetry.lock* ./
 RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Development stage
-FROM base as development
+FROM base AS development
 
 # Copy application code first
 COPY . .
@@ -55,7 +55,7 @@ EXPOSE 8000
 CMD ["poetry", "run", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Production stage
-FROM base as production
+FROM base AS production
 
 # Copy application code
 COPY . .

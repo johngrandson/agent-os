@@ -51,6 +51,7 @@ class ApplicationContainer(DeclarativeContainer):
     agent_os_integrator = ThreadSafeSingleton(
         services.agent_os_integrator,
         agent_repository=agent_repository,
+        event_bus=event_bus,
     )
 
     application_bootstrapper = ThreadSafeSingleton(
