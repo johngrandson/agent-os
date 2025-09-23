@@ -8,10 +8,6 @@ from dotenv import load_dotenv
 from app.agents.repositories.agent_repository import AgentRepository
 from agno.agent import Agent as AgnoAgent
 from agno.models.openai import OpenAIChat
-from agno.db.postgres.postgres import PostgresDb
-from agno.knowledge.embedder.openai import OpenAIEmbedder
-from agno.knowledge.knowledge import Knowledge
-from agno.vectordb.pgvector import PgVector
 from agno.os import AgentOS
 
 logger = logging.getLogger(__name__)
@@ -36,19 +32,6 @@ class AgentOSIntegrator:
             status=True, limit=50
         )
 
-        db_url = os.getenv("AGNO_DB_URL", "")
-
-        db = PostgresDb(db_url=db_url, knowledge_table="knowledge_contents")
-        knowledge = Knowledge(
-            name="Basic SDK Knowledge Base",
-            description="Agno 2.0 Knowledge Implementation",
-            contents_db=db,
-            vector_db=PgVector(
-                table_name="knowledge_chunks",
-                db_url=db_url,
-                embedder=OpenAIEmbedder(),
-            ),
-        )
 
         logger.info(f"Found {len(db_agents)} active agents in database")
 
@@ -61,8 +44,6 @@ class AgentOSIntegrator:
             agno_agent = AgnoAgent(
                 id=str(db_agent.id),
                 name=db_agent.name,
-                db=db,
-                knowledge=knowledge,
                 model=OpenAIChat(id=os.getenv("AGNO_DEFAULT_MODEL", "gpt-4o-mini")),
             )
             self.agno_agents.append(agno_agent)

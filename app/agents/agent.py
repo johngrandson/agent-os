@@ -27,6 +27,9 @@ class Agent(Base, TimestampMixin):
     available_tools: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     tool_configurations: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
+    # Knowledge configuration field
+    knowledge_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     @classmethod
     def create(
         cls,
@@ -38,6 +41,7 @@ class Agent(Base, TimestampMixin):
         is_active: bool,
         available_tools: List[str] = None,
         tool_configurations: dict = None,
+        knowledge_config: dict = None,
     ) -> "Agent":
         return cls(
             name=name,
@@ -47,6 +51,7 @@ class Agent(Base, TimestampMixin):
             is_active=is_active,
             available_tools=available_tools,
             tool_configurations=tool_configurations,
+            knowledge_config=knowledge_config,
         )
 
 

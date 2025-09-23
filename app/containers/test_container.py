@@ -24,7 +24,6 @@ class TestContainer(DeclarativeContainer):
 
     # Mocked repositories
     agent_repository = Singleton(MagicMock)
-    knowledge_repository = Singleton(MagicMock)
 
     # Test services with mocked dependencies
     agent_service = Singleton(
@@ -34,12 +33,6 @@ class TestContainer(DeclarativeContainer):
         tool_registry=tool_registry,
     )
 
-    knowledge_service = Singleton(
-        ServicesContainer.knowledge_service,
-        repository=knowledge_repository,
-        openai_client=openai_client,
-        event_bus=event_bus,
-    )
 
     @classmethod
     def override_providers_for_test(cls, **overrides):
