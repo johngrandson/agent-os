@@ -38,7 +38,7 @@ class AgentKnowledgeFactory:
 
         knowledge = Knowledge(
             name=f"Knowledge for {agent_name}",
-            description="Shared Knowledge with Agent Filtering",
+            description="Knowledge with Agent Filtering",
             contents_db=db,
             vector_db=PgVector(
                 table_name="knowledge_chunks",
