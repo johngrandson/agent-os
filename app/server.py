@@ -13,7 +13,6 @@ from app.agents.api.routers import agent_router
 from app.tools.api.routers import router as tool_router
 from app.events.api.routers import router as event_router
 from app.events.api.websocket_router import router as websocket_router
-# StartupManager removed - using ApplicationBootstrapper directly from container
 
 from core.exceptions import CustomException
 from core.fastapi.middlewares import SQLAlchemyMiddleware, ResponseLogMiddleware
@@ -88,7 +87,6 @@ def create_app() -> FastAPI:
     container = ApplicationContainer()
     setup_dependency_injection(container)
 
-    # Get application bootstrapper from container
     bootstrapper = container.application_bootstrapper()
 
     # Create FastAPI app
@@ -111,7 +109,6 @@ def create_app() -> FastAPI:
         await bootstrapper.initialize_tools()
         await bootstrapper.initialize_event_system()
 
-        # Setup AgentOS after agents are loaded
         nonlocal app
         app = bootstrapper.setup_agent_os(app)
 

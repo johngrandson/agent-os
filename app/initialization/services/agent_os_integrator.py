@@ -24,7 +24,6 @@ class AgentOSIntegrator:
         self.loaded_agents = []
         self.agno_agents = []
 
-        # Initialize knowledge factory
         db_url = os.getenv("AGNO_DB_URL", "")
         self.knowledge_factory = AgentKnowledgeFactory(db_url)
 
@@ -42,17 +41,14 @@ class AgentOSIntegrator:
         # Store the DB agents
         self.loaded_agents = db_agents
 
-        # Convert to AgentOS agents with isolated knowledge
         self.agno_agents = []
         for db_agent in db_agents:
-            # Create agent-specific knowledge base
             knowledge = await self.knowledge_factory.create_knowledge_for_agent(
                 agent_id=str(db_agent.id),
                 agent_name=db_agent.name,
                 knowledge_config=db_agent.knowledge_config,
             )
 
-            # Configure strict agent-level knowledge filters
             agent_knowledge_filters = {
                 "agent_id": str(db_agent.id),
             }
@@ -61,9 +57,9 @@ class AgentOSIntegrator:
                 id=str(db_agent.id),
                 name=db_agent.name,
                 knowledge=knowledge,
-                search_knowledge=True,  # Enable knowledge search with filters
-                knowledge_filters=agent_knowledge_filters,  # Apply strict agent isolation
-                enable_agentic_knowledge_filters=False,  # Use manual filters only
+                search_knowledge=True,
+                knowledge_filters=agent_knowledge_filters,
+                enable_agentic_knowledge_filters=False,
                 model=OpenAIChat(id=os.getenv("AGNO_DEFAULT_MODEL", "gpt-4o-mini")),
             )
             self.agno_agents.append(agno_agent)

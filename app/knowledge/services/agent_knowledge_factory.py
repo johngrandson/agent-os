@@ -22,12 +22,10 @@ class AgentKnowledgeFactory:
         knowledge_config: Optional[Dict[str, Any]] = None,
     ):
         """Create shared knowledge base with agent-specific metadata filtering"""
-        # Note: knowledge_config parameter kept for future extensibility
         return self._create_shared_knowledge(agent_id, agent_name)
 
     def _create_shared_knowledge(self, agent_id: str, agent_name: str):
         """Create shared knowledge base for agent"""
-        # Import here to avoid circular imports
         from agno.vectordb.pgvector import PgVector
         from agno.knowledge.embedder.openai import OpenAIEmbedder
         from agno.db.postgres.postgres import PostgresDb
@@ -49,4 +47,3 @@ class AgentKnowledgeFactory:
 
         logger.info(f"Created shared knowledge for agent {agent_name}")
         return knowledge
-
