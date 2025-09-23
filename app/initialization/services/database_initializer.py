@@ -26,15 +26,7 @@ class DatabaseInitializer:
 
     def _import_models(self):
         """Import all models to ensure they are registered with SQLAlchemy
-
-        Order matters! Import knowledge models first, then other models that reference them
         """
-        from app.knowledge.knowledge import (
-            AgentMemory,
-            KnowledgeContext,
-            KnowledgeContent,
-            KnowledgeChunk,
-        )
         from app.agents.agent import Agent
 
     async def initialize(self):

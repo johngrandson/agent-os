@@ -10,9 +10,6 @@ from app.container import ApplicationContainer
 from core.logging_config import configure_logging
 from core.config import config
 from app.agents.api.routers import agent_router
-from app.knowledge.api.routers import knowledge_router
-
-# Enhanced knowledge now integrated into main knowledge router
 from app.tools.api.routers import router as tool_router
 from app.events.api.routers import router as event_router
 from app.events.api.websocket_router import router as websocket_router
@@ -68,7 +65,6 @@ def setup_routes(app: FastAPI):
         return {"status": "healthy", "service": "agent-os"}
 
     app.include_router(agent_router, prefix="/api/v1/agents")
-    app.include_router(knowledge_router, prefix="/api/v1")
     app.include_router(tool_router, prefix="/api/v1")
     app.include_router(event_router, prefix="/api/v1")
     app.include_router(websocket_router, prefix="/api/v1")
@@ -79,12 +75,10 @@ def setup_dependency_injection(container: ApplicationContainer):
     container.wire(
         modules=[
             "app.agents.api.routers",
-            "app.knowledge.api.routers",
             "app.tools.api.routers",
         ]
     )
     agent_router.container = container
-    knowledge_router.container = container
     tool_router.container = container
 
 

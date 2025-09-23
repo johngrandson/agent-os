@@ -2,7 +2,6 @@ from dependency_injector.containers import DeclarativeContainer
 from dependency_injector.providers import Factory
 
 from app.agents.services.agent_service import AgentService
-from app.knowledge.services.knowledge_service import KnowledgeService
 
 # Initialization services
 from app.initialization.services.database_initializer import DatabaseInitializer
@@ -17,7 +16,6 @@ class ServicesContainer(DeclarativeContainer):
 
     # Domain service factories - actual dependencies injected by main container
     agent_service = Factory(AgentService)
-    knowledge_service = Factory(KnowledgeService)
 
     # Initialization service factories
     database_initializer = Factory(DatabaseInitializer)

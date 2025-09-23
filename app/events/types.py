@@ -7,7 +7,6 @@ from enum import Enum
 # Import all domain-specific event types
 from app.agents.events.types import AgentEventType
 from app.tools.events.types import ToolEventType
-from app.knowledge.events.types import KnowledgeEventType
 
 
 class EventType(str, Enum):
@@ -26,12 +25,6 @@ class EventType(str, Enum):
     TOOL_EXECUTED = ToolEventType.TOOL_EXECUTED
     TOOL_FAILED = ToolEventType.TOOL_FAILED
 
-    # Knowledge Events
-    MEMORY_CREATED = KnowledgeEventType.MEMORY_CREATED
-    MEMORY_UPDATED = KnowledgeEventType.MEMORY_UPDATED
-    MEMORY_DELETED = KnowledgeEventType.MEMORY_DELETED
-    MEMORY_ACCESSED = KnowledgeEventType.MEMORY_ACCESSED
-    KNOWLEDGE_SEARCHED = KnowledgeEventType.KNOWLEDGE_SEARCHED
 
     # System Events
     SYSTEM_ALERT = "system.alert"

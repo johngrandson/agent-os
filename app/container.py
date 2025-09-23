@@ -26,7 +26,6 @@ class ApplicationContainer(DeclarativeContainer):
 
     # Repositories
     agent_repository = repositories.agent_repository
-    knowledge_repository = repositories.knowledge_repository
 
     # Domain services with thread-safe dependency injection
     agent_service = ThreadSafeSingleton(
@@ -36,12 +35,6 @@ class ApplicationContainer(DeclarativeContainer):
         tool_registry=tool_registry,
     )
 
-    knowledge_service = ThreadSafeSingleton(
-        services.knowledge_service,
-        repository=knowledge_repository,
-        openai_client=openai_client,
-        event_bus=event_bus,
-    )
 
     # Initialization services
     database_initializer = services.database_initializer
