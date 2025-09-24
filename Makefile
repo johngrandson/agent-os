@@ -42,6 +42,7 @@ help: ## Show this help message
 	@echo "  make test-coverage - Run tests with coverage"
 	@echo "  make lint          - Run linting"
 	@echo "  make format        - Format code"
+	@echo "  make imports       - Organize imports"
 	@echo "  make check         - Run all quality checks"
 	@echo ""
 	@echo "🧹 Maintenance:"
@@ -81,11 +82,14 @@ test-coverage: ## Run tests with coverage
 
 lint: ## Run linting
 	$(PYTHON) -m ruff check .
-	$(PYTHON) -m mypy app/
+	$(PYTHON) -m mypy --explicit-package-bases app/
 
 format: ## Format code
 	$(PYTHON) -m ruff format .
 	$(PYTHON) -m ruff check --fix .
+
+imports: ## Organize imports
+	$(PYTHON) -m ruff check --select I --fix .
 
 # Cleanup Commands
 clean: ## Clean build artifacts

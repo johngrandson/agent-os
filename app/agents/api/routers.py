@@ -14,6 +14,7 @@ from core.exceptions.domain import AgentNotFound
 from dependency_injector.wiring import Provide, inject
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 
 
 agent_router = APIRouter()
@@ -37,9 +38,9 @@ agent_router = APIRouter()
 @inject
 async def get_agent_list(
     limit: int = Query(10, description="Maximum number of agents to return", ge=1, le=12),
-    prev: int = Query(None, description="ID of the previous agent for pagination"),
+    prev: int | None = Query(None, description="ID of the previous agent for pagination"),
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
+) -> list[AgentResponse]:
     """Get paginated list of agents with optional filtering"""
     agents = await agent_service.get_agent_list(limit=limit, prev=prev)
     return [AgentResponse.model_validate(agent) for agent in agents]
@@ -66,7 +67,7 @@ async def get_agent_list(
 async def create_agent(
     request: CreateAgentRequest,
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
+) -> CreateAgentResponse:
     """Create a new agent with the provided information"""
     command = CreateAgentCommand(**request.model_dump())
     agent = await agent_service.create_agent(command=command)
@@ -85,7 +86,7 @@ async def create_agent(
 async def get_agent(
     agent_id: str,
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
+) -> AgentResponse:
     """Get agent by ID with relationships"""
     agent = await agent_service.get_agent_by_id_with_relations(agent_id=agent_id)
     if not agent:
@@ -117,7 +118,7 @@ async def update_agent(
     agent_id: str,
     request: UpdateAgentRequest,
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
+) -> AgentResponse:
     """Update an existing agent"""
     try:
         # Get current agent to fill in missing fields
@@ -141,10 +142,6 @@ async def update_agent(
             is_active=request.is_active
             if request.is_active is not None
             else current_agent.is_active,
-            role=request.role if request.role is not None else current_agent.role,
-            specialization=request.specialization
-            if request.specialization is not None
-            else current_agent.specialization,
             available_tools=request.available_tools
             if request.available_tools is not None
             else current_agent.available_tools,
@@ -190,9 +187,9 @@ async def update_agent(
 async def delete_agent(
     agent_id: str,
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
+) -> Response:
     """Delete an agent by ID"""
     success = await agent_service.delete_agent(agent_id=agent_id)
     if not success:
         raise HTTPException(status_code=404, detail="Agent not found")
-    return {"message": "Agent deleted successfully"}
+    return Response(status_code=204)

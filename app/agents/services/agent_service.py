@@ -13,7 +13,7 @@ class AgentService:
         *,
         repository: AgentRepository,
         event_publisher: AgentEventPublisher,
-    ):
+    ) -> None:
         self.repository = repository
         self.event_publisher = event_publisher
 
@@ -56,16 +56,19 @@ class AgentService:
 
         return agent
 
-    async def get_agent_by_id(self, *, agent_id: uuid.UUID) -> Agent | None:
-        return await self.repository.get_agent_by_id(agent_id=agent_id)
+    async def get_agent_by_id(self, *, agent_id: str) -> Agent | None:
+        agent_uuid = uuid.UUID(agent_id)
+        return await self.repository.get_agent_by_id(agent_id=agent_uuid)
 
-    async def get_agent_by_id_with_relations(self, *, agent_id: uuid.UUID) -> Agent | None:
-        return await self.repository.get_agent_by_id_with_relations(agent_id=agent_id)
+    async def get_agent_by_id_with_relations(self, *, agent_id: str) -> Agent | None:
+        agent_uuid = uuid.UUID(agent_id)
+        return await self.repository.get_agent_by_id_with_relations(agent_id=agent_uuid)
 
     @Transactional()
     async def update_agent(self, *, command: UpdateAgentCommand) -> Agent | None:
         """Update an existing agent"""
-        agent = await self.repository.get_agent_by_id(agent_id=command.agent_id)
+        agent_uuid = uuid.UUID(command.agent_id)
+        agent = await self.repository.get_agent_by_id(agent_id=agent_uuid)
         if not agent:
             return None
 
@@ -74,7 +77,7 @@ class AgentService:
             existing_agent = await self.repository.get_agent_by_phone_number(
                 phone_number=command.phone_number
             )
-            if existing_agent and existing_agent.id != command.agent_id:
+            if existing_agent and str(existing_agent.id) != command.agent_id:
                 from core.exceptions.domain import AgentAlreadyExists
 
                 raise AgentAlreadyExists
@@ -87,7 +90,7 @@ class AgentService:
         agent.is_active = command.is_active
         agent.available_tools = command.available_tools
 
-        await self.repository.update(agent=agent)
+        await self.repository.update_agent(agent=agent)
 
         # Publish agent update event
         await self.event_publisher.agent_updated(
@@ -101,15 +104,16 @@ class AgentService:
         return agent
 
     @Transactional()
-    async def delete_agent(self, *, agent_id: uuid.UUID) -> bool:
+    async def delete_agent(self, *, agent_id: str) -> bool:
         """Delete an agent by ID"""
-        agent = await self.repository.get_agent_by_id(agent_id=agent_id)
+        agent_uuid = uuid.UUID(agent_id)
+        agent = await self.repository.get_agent_by_id(agent_id=agent_uuid)
         if not agent:
             return False
 
-        await self.repository.delete(agent=agent)
+        await self.repository.delete_agent(agent=agent)
 
         # Publish agent deletion event
-        await self.event_publisher.agent_deleted(agent_id=str(agent_id))
+        await self.event_publisher.agent_deleted(agent_id=agent_id)
 
         return True

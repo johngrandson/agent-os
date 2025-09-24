@@ -6,7 +6,7 @@ from app.events.agents.publisher import AgentEventPublisher
 # Application imports
 from app.events.broker import broker
 from app.events.webhooks.publisher import WebhookEventPublisher
-from app.initialization import AgentLoader
+from app.initialization import AgentCache
 
 # Agno integration imports
 from app.integrations.agno import AgnoAgentConverter, AgnoKnowledgeAdapter, AgnoModelFactory
@@ -15,19 +15,15 @@ from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
 # Core imports
 from core.config import get_config
 from dependency_injector import containers, providers
-from dependency_injector.containers import WiringConfiguration
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 class Container(containers.DeclarativeContainer):
-    """Simplified application container following dependency-injector best practices"""
+    """Application container following dependency-injector best practices"""
 
     # Configuration
     config = providers.Configuration()
-
-    # Wiring configuration - will be done manually to avoid circular imports
-    # wiring_config = WiringConfiguration(packages=["app"])
 
     # Configuration provider
     config_object = providers.Singleton(get_config)
@@ -112,9 +108,9 @@ class Container(containers.DeclarativeContainer):
         event_publisher=agent_event_publisher,
     )
 
-    # Shared agent loader
-    agent_loader = providers.Singleton(
-        AgentLoader,
+    # Agent cache for simple storage and lookup
+    agent_cache = providers.Singleton(
+        AgentCache,
         agent_repository=agent_repository,
         agno_agent_converter=agno_agent_converter,
     )
@@ -122,7 +118,7 @@ class Container(containers.DeclarativeContainer):
     # Webhook services
     webhook_agent_processor = providers.Factory(
         WebhookAgentProcessor,
-        agent_loader=agent_loader,
+        agent_cache=agent_cache,
         event_publisher=webhook_event_publisher,
     )
 

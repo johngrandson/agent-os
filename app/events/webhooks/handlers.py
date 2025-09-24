@@ -43,22 +43,20 @@ async def _setup_agent_processor(agent_id: str):
 
     # Get agent with timeout
     agent = await asyncio.wait_for(
-        agent_service.get_agent_by_id(agent_id), timeout=config.AGENT_GET_TIMEOUT
+        agent_service.get_agent_by_id(agent_id=agent_id), timeout=config.AGENT_GET_TIMEOUT
     )
 
     if not agent:
-        raise ValueError(f"Agent {agent_id} not found")
+        msg = f"Agent {agent_id} not found"
+        raise ValueError(msg)
+
+    print(f"#################### Agent found: {container}")
 
     # Create processor
     processor = WebhookAgentProcessor(
-        container.agent_repository(),
+        container.agent_cache(),
         container.webhook_event_publisher(),
-        container.config,
     )
-
-    # Initialize if needed
-    if not processor.has_agents():
-        await asyncio.wait_for(processor.initialize_agents(), timeout=config.AGENT_INIT_TIMEOUT)
 
     return processor, agent
 
@@ -174,14 +172,16 @@ async def handle_message_received(data: WebhookEventPayload):
         logger.error(f"Error handling message received event: {e}")
         # Create a minimal WebhookData for error reporting
         try:
-            if "webhook_data" in locals():
+            if "webhook_data" in locals() and webhook_data is not None:
                 await _publish_processing_failed(session_id, "unknown", str(e), webhook_data)
             else:
                 # Create minimal webhook data from available data
-                minimal_payload = WebhookPayload(
-                    from_="unknown", body=str(message_data), from_me=False
+                minimal_payload = WebhookPayload.model_validate(
+                    {"from": "unknown", "body": str(message_data), "fromMe": False}
                 )
-                minimal_webhook_data = WebhookData(event="message", payload=minimal_payload)
+                minimal_webhook_data = WebhookData(
+                    event="message", payload=minimal_payload, metadata=None
+                )
                 await _publish_processing_failed(
                     session_id, "unknown", str(e), minimal_webhook_data
                 )
@@ -239,7 +239,8 @@ async def _attempt_message_retry(session_id: str, webhook_data_dict: dict, agent
 async def _handle_max_retries_reached(session_id: str, agent_id: str, error_message: str):
     """Handle case when max retries have been reached"""
     logger.error(
-        f"Max retries ({config.WEBHOOK_MAX_RETRIES}) reached for session {session_id}. Moving to dead letter queue."
+        f"Max retries ({config.WEBHOOK_MAX_RETRIES}) reached for session {session_id}. "
+        "Moving to dead letter queue."
     )
     logger.critical(
         f"DEAD LETTER: Failed to process message after {config.WEBHOOK_MAX_RETRIES} retries"
@@ -265,7 +266,8 @@ async def handle_processing_failed(data: WebhookEventPayload):
         # Exponential backoff
         retry_delay = 2**retry_count
         logger.info(
-            f"Scheduling retry {retry_count + 1}/{config.WEBHOOK_MAX_RETRIES} for session {session_id} "
+            f"Scheduling retry {retry_count + 1}/{config.WEBHOOK_MAX_RETRIES} "
+            f"for session {session_id} "
             f"in {retry_delay}s"
         )
 

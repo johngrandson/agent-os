@@ -38,9 +38,7 @@ class WebhookData(BaseModel):
 
     event: str = Field(..., title="Event Type", description="Event type (e.g., 'message')")
     payload: WebhookPayload = Field(..., title="Payload", description="Message payload data")
-    metadata: WebhookMetadata | None = Field(
-        default_factory=WebhookMetadata, title="Metadata", description="Agent metadata"
-    )
+    metadata: WebhookMetadata | None = Field(None, title="Metadata", description="Agent metadata")
 
     def get_chat_id(self) -> str:
         """Get the chat ID from payload"""

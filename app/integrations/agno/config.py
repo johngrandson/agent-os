@@ -1,7 +1,7 @@
 """Agno integration configuration"""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from app.agents.agent import Agent
 

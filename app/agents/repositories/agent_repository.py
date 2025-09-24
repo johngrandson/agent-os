@@ -29,13 +29,13 @@ class AgentRepository:
             query = query.limit(limit)
 
             result = await session.execute(query)
-            return result.scalars().all()
+            return list(result.scalars().all())
 
     async def get_agent_by_id(self, *, agent_id: uuid.UUID) -> Agent | None:
         """Find agent by ID"""
         async with get_session() as session:
-            stmt = await session.execute(select(Agent).where(Agent.id == agent_id))
-            return stmt.scalars().first()
+            result = await session.execute(select(Agent).where(Agent.id == agent_id))
+            return result.scalars().first()
 
     async def get_agent_by_id_with_relations(self, *, agent_id: uuid.UUID) -> Agent | None:
         """Find agent by ID with config eagerly loaded"""
@@ -47,8 +47,8 @@ class AgentRepository:
     async def get_agent_by_phone_number(self, *, phone_number: str) -> Agent | None:
         """Find agent by phone number"""
         async with get_session() as session:
-            stmt = await session.execute(select(Agent).where(Agent.phone_number == phone_number))
-            return stmt.scalars().first()
+            result = await session.execute(select(Agent).where(Agent.phone_number == phone_number))
+            return result.scalars().first()
 
     async def get_agents_by_status(
         self,
@@ -60,19 +60,7 @@ class AgentRepository:
         async with get_session() as session:
             query = select(Agent).where(Agent.is_active == status).limit(limit)
             result = await session.execute(query)
-            return result.scalars().all()
-
-    async def get_agents_by_role(
-        self,
-        *,
-        role: str,
-        limit: int = 12,
-    ) -> list[Agent]:
-        """Get agents by role"""
-        async with get_session() as session:
-            query = select(Agent).where(Agent.role == role).limit(limit)
-            result = await session.execute(query)
-            return result.scalars().all()
+            return list(result.scalars().all())
 
     async def create_agent(self, *, agent: Agent) -> Agent:
         """Create a new agent"""

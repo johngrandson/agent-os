@@ -131,6 +131,7 @@ When multiple valid approaches exist, choose based on:
 - [ ] Tests written and passing
 - [ ] Code follows project conventions
 - [ ] No linter/formatter warnings
+- [ ] Always use type for variables and functions
 - [ ] Commit messages are clear
 - [ ] Implementation matches plan
 - [ ] No TODOs without issue numbers

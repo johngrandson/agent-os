@@ -39,7 +39,7 @@ webhook_router = APIRouter()
 async def handle_whatsapp_webhook(
     webhook_data: WebhookData,
     webhook_publisher: WebhookEventPublisher = Depends(Provide[Container.webhook_event_publisher]),
-):
+) -> dict[str, str]:
     """Lightweight webhook handler - validates and publishes events"""
     try:
         logger.info(f"Received webhook event: {webhook_data.event}")

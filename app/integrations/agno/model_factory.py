@@ -1,7 +1,6 @@
 """Model factory for creating Agno-compatible AI models"""
 
 import logging
-from typing import Any
 
 from agno.models.openai import OpenAIChat
 from core.config import Config
@@ -27,8 +26,7 @@ class AgnoModelFactory:
         model_name = self.config.AGNO_DEFAULT_MODEL
         logger.info(f"Creating default model: {model_name}")
 
-        model = OpenAIChat(id=model_name)
-        return model
+        return OpenAIChat(id=model_name)
 
     def create_openai_model(self, model_id: str) -> OpenAIChat:
         """

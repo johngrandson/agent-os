@@ -29,14 +29,13 @@ class EventPublisher(Protocol):
 class BaseEventPublisher(ABC):
     """Abstract base class for domain-specific event publishers"""
 
-    def __init__(self, broker):
+    def __init__(self, broker) -> None:
         self.broker = broker
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
     def get_domain_prefix(self) -> str:
         """Return the domain prefix for event channels (e.g., 'agent', 'webhook')"""
-        pass
 
     def _build_channel(self, event_type: str) -> str:
         """Build channel name with domain prefix"""

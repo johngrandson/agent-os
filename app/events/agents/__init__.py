@@ -7,4 +7,4 @@ from .handlers import agent_router
 from .publisher import AgentEventPublisher
 
 
-__all__ = ["AgentEvent", "AgentEventPublisher", "agent_router"]
+__all__ = ["AgentEvent", "AgentEventPublisher", "agent_router", "handlers"]

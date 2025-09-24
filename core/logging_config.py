@@ -67,7 +67,7 @@ def configure_logging(debug: bool = False) -> None:
     """Configure logging for the application"""
     import logging.config
 
-    level = "DEBUG" if debug else "INFO"
+    level = "INFO"
     config = setup_logging(level)
 
     # Apply the configuration

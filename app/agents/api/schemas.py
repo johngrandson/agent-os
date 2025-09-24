@@ -21,13 +21,15 @@ class CreateAgentRequest(BaseModel):
 class UpdateAgentRequest(BaseModel):
     """Agent update request"""
 
-    name: str = Field(None, description="Agent name")
-    phone_number: str = Field(None, description="Agent phone number")
+    name: str | None = Field(None, description="Agent name")
+    phone_number: str | None = Field(None, description="Agent phone number")
     description: str | None = Field(None, description="Agent description")
     instructions: list[str] | None = Field(None, description="Agent instructions")
-    is_active: bool = Field(None, description="Agent active status")
+    is_active: bool | None = Field(None, description="Agent active status")
     whatsapp_enabled: bool | None = Field(None, description="WhatsApp enabled status")
     whatsapp_token: str | None = Field(None, description="WhatsApp token")
+    available_tools: list[str] | None = Field(None, description="Available tools")
+    tool_configurations: dict | None = Field(None, description="Tool configurations")
 
 
 # Related Entity Schemas
@@ -108,3 +110,5 @@ class UpdateAgentCommand(BaseModel):
     description: str | None = None
     instructions: list[str] | None = None
     is_active: bool
+    available_tools: list[str] | None = None
+    tool_configurations: dict | None = None

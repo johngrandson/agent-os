@@ -1,7 +1,6 @@
 """Agent conversion logic from database agents to AgnoAgent instances"""
 
 import logging
-from typing import Any, Dict
 
 from agno.agent import Agent as AgnoAgent
 from app.agents.agent import Agent
@@ -88,7 +87,7 @@ class AgnoAgentConverter:
             try:
                 agno_agent = await self.convert_agent(
                     db_agent,
-                    markdown=True,  # Webhook uses markdown
+                    markdown=True,
                     search_knowledge=True,
                     add_history_to_context=True,
                     num_history_runs=3,

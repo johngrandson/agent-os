@@ -1,7 +1,7 @@
 """Event registry for managing handlers and publishers"""
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from faststream.redis import RedisRouter
 
@@ -24,7 +24,8 @@ class EventRegistry:
     def get_domain_router(self, domain: str) -> RedisRouter:
         """Get router for a specific domain"""
         if domain not in self._routers:
-            raise ValueError(f"No router registered for domain: {domain}")
+            msg = f"No router registered for domain: {domain}"
+            raise ValueError(msg)
         return self._routers[domain]
 
     def get_all_routers(self) -> list[RedisRouter]:

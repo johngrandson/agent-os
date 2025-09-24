@@ -9,7 +9,7 @@ class Config(BaseSettings):
 
     # Application Settings
     ENV: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     HOST_API: str = ""
@@ -76,7 +76,8 @@ class Config(BaseSettings):
     @classmethod
     def validate_openai_key(cls, v):
         if v and not v.startswith("sk-"):
-            raise ValueError("OpenAI API key must start with sk-")
+            msg = "OpenAI API key must start with sk-"
+            raise ValueError(msg)
         return v
 
     @property
@@ -102,7 +103,7 @@ class Config(BaseSettings):
 
 
 # Environment-specific overrides
-_env_overrides = {
+_env_overrides: dict[str, dict[str, str | int | bool]] = {
     "test": {"DEBUG": False},
     "e2e": {
         "DEBUG": False,
@@ -123,9 +124,11 @@ def get_config() -> Config:
 
     # Apply environment-specific overrides
     if env in _env_overrides:
-        for key, value in _env_overrides[env].items():
-            setattr(config, key, value)
-
+        overrides = _env_overrides[env]
+        if isinstance(overrides, dict):
+            for key, value in overrides.items():
+                if hasattr(config, key):
+                    setattr(config, key, value)
     return config
 
 
