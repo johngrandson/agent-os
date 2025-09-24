@@ -1,6 +1,6 @@
 import threading
 import weakref
-from typing import Any, Dict
+from typing import Any
 
 
 class LockManager:
@@ -14,7 +14,7 @@ class LockManager:
 
     def __init__(self) -> None:
         """Initialize a new LockManager instance."""
-        self._locks: Dict[str, Dict[Any, threading.Lock]] = {}
+        self._locks: dict[str, dict[Any, threading.Lock]] = {}
         self._meta_lock = threading.RLock()  # Protects the locks dictionary itself
 
     def get_lock(self, key: str, value: str) -> threading.Lock:
@@ -36,10 +36,12 @@ class LockManager:
             ValueError: If key is empty or whitespace-only
         """
         if not isinstance(key, str):
-            raise TypeError("Key must be a string")
+            msg = "Key must be a string"
+            raise TypeError(msg)
 
         if not key.strip():
-            raise ValueError("Key cannot be empty")
+            msg = "Key cannot be empty"
+            raise ValueError(msg)
 
         with self._meta_lock:
             # Initialize key dictionary if it doesn't exist
@@ -78,9 +80,7 @@ class LockManager:
                             # Check reference count (2 = our local var + dict entry)
                             import sys
 
-                            if (
-                                sys.getrefcount(lock) <= 3
-                            ):  # dict, local var, getrefcount param
+                            if sys.getrefcount(lock) <= 3:  # dict, local var, getrefcount param
                                 values_to_remove.append(value)
                     except (TypeError, AttributeError):
                         # If we can't create weak reference, keep the lock

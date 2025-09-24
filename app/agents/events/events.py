@@ -1,69 +1,28 @@
-"""
-Agent domain event classes
-"""
+"""Agent domain events"""
 
-from typing import Dict, Any
-from app.events.core import BaseEvent, EventPriority
-from .types import AgentEventType
+from dataclasses import dataclass
+from typing import Any, Dict
 
 
-class AgentEvent(BaseEvent):
-    """Agent-related events"""
+@dataclass
+class AgentEvent:
+    """Base agent event class"""
 
     agent_id: str
+    event_type: str
+    data: Dict[str, Any]
 
     @classmethod
-    def agent_created(cls, agent_id: str, data: Dict[str, Any] = None) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_CREATED,
-            agent_id=agent_id,
-            data=data or {},
-            source="agent_service",
-        )
+    def agent_created(cls, agent_id: str, agent_data: Dict[str, Any]) -> "AgentEvent":
+        """Create an agent created event"""
+        return cls(agent_id=agent_id, event_type="agent.created", data=agent_data)
 
     @classmethod
-    def agent_updated(cls, agent_id: str, data: Dict[str, Any] = None) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_UPDATED,
-            agent_id=agent_id,
-            data=data or {},
-            source="agent_service",
-        )
+    def agent_updated(cls, agent_id: str, agent_data: Dict[str, Any]) -> "AgentEvent":
+        """Create an agent updated event"""
+        return cls(agent_id=agent_id, event_type="agent.updated", data=agent_data)
 
     @classmethod
-    def agent_deleted(cls, agent_id: str, data: Dict[str, Any] = None) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_DELETED,
-            agent_id=agent_id,
-            data=data or {},
-            source="agent_service",
-        )
-
-    @classmethod
-    def agent_activated(cls, agent_id: str) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_ACTIVATED,
-            agent_id=agent_id,
-            source="agent_service",
-            priority=EventPriority.HIGH,
-        )
-
-    @classmethod
-    def agent_deactivated(cls, agent_id: str) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_DEACTIVATED,
-            agent_id=agent_id,
-            source="agent_service",
-            priority=EventPriority.HIGH,
-        )
-
-    @classmethod
-    def agent_knowledge_created(
-        cls, agent_id: str, data: Dict[str, Any] = None
-    ) -> "AgentEvent":
-        return cls(
-            event_type=AgentEventType.AGENT_KNOWLEDGE_CREATED,
-            agent_id=agent_id,
-            data=data or {},
-            source="knowledge_factory",
-        )
+    def agent_deleted(cls, agent_id: str) -> "AgentEvent":
+        """Create an agent deleted event"""
+        return cls(agent_id=agent_id, event_type="agent.deleted", data={})

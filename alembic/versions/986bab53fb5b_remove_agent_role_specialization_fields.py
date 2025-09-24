@@ -6,17 +6,17 @@ Create Date: 2025-09-22 16:55:51.563651
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from alembic import op
+
 
 # revision identifiers, used by Alembic.
 revision: str = "986bab53fb5b"
-down_revision: Union[str, None] = "9d3995e6a5b4"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "9d3995e6a5b4"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -34,8 +34,6 @@ def downgrade() -> None:
     )
     op.add_column(
         "agents",
-        sa.Column(
-            "specialization", sa.VARCHAR(length=255), autoincrement=False, nullable=True
-        ),
+        sa.Column("specialization", sa.VARCHAR(length=255), autoincrement=False, nullable=True),
     )
     # ### end Alembic commands ###

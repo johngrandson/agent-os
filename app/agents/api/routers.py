@@ -1,22 +1,20 @@
 """Agent API routers - consolidated FastAPI endpoints"""
 
-from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Query, HTTPException
-
-from app.container import ApplicationContainer as Container
 from app.agents.api.schemas import (
+    AgentResponse,
+    CreateAgentCommand,
     CreateAgentRequest,
     CreateAgentResponse,
-    AgentResponse,
-    UpdateAgentRequest,
-    CreateAgentCommand,
     UpdateAgentCommand,
-    AgentCapabilitiesResponse,
-    AgentToolExecutionRequest,
-    AgentToolExecutionResponse,
+    UpdateAgentRequest,
 )
 from app.agents.services.agent_service import AgentService
+from app.container import Container
 from core.exceptions.domain import AgentNotFound
+from dependency_injector.wiring import Provide, inject
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 
 agent_router = APIRouter()
 
@@ -38,9 +36,7 @@ agent_router = APIRouter()
 )
 @inject
 async def get_agent_list(
-    limit: int = Query(
-        10, description="Maximum number of agents to return", ge=1, le=12
-    ),
+    limit: int = Query(10, description="Maximum number of agents to return", ge=1, le=12),
     prev: int = Query(None, description="ID of the previous agent for pagination"),
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
 ):
@@ -74,16 +70,16 @@ async def create_agent(
     """Create a new agent with the provided information"""
     command = CreateAgentCommand(**request.model_dump())
     agent = await agent_service.create_agent(command=command)
-    return CreateAgentResponse(
-        id=agent.id, name=agent.name, phone_number=agent.phone_number
-    )
+    return CreateAgentResponse(id=agent.id, name=agent.name, phone_number=agent.phone_number)
 
 
 @agent_router.get(
     "/{agent_id}",
     response_model=AgentResponse,
     summary="Get agent by ID",
-    description="Retrieve a specific agent by ID with all relationships (prompts and configuration)",
+    description=(
+        "Retrieve a specific agent by ID with all relationships (prompts and configuration)"
+    ),
 )
 @inject
 async def get_agent(
@@ -93,7 +89,7 @@ async def get_agent(
     """Get agent by ID with relationships"""
     agent = await agent_service.get_agent_by_id_with_relations(agent_id=agent_id)
     if not agent:
-        raise AgentNotFound()
+        raise AgentNotFound
     return AgentResponse.model_validate(agent)
 
 
@@ -170,8 +166,8 @@ async def update_agent(
             raise HTTPException(
                 status_code=409,
                 detail="Agent with this phone number already exists",
-            )
-        raise e
+            ) from e
+        raise
 
 
 @agent_router.delete(
@@ -200,47 +196,3 @@ async def delete_agent(
     if not success:
         raise HTTPException(status_code=404, detail="Agent not found")
     return {"message": "Agent deleted successfully"}
-
-
-@agent_router.get(
-    "/{agent_id}/capabilities",
-    response_model=AgentCapabilitiesResponse,
-    summary="Get agent capabilities",
-    description="Get agent capabilities including available tools and configurations",
-)
-@inject
-async def get_agent_capabilities(
-    agent_id: str,
-    agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
-    """Get agent capabilities including available tools"""
-    capabilities = await agent_service.get_agent_capabilities(agent_id=agent_id)
-    if not capabilities:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return capabilities
-
-
-@agent_router.post(
-    "/{agent_id}/execute-tool",
-    response_model=AgentToolExecutionResponse,
-    summary="Execute tool for agent",
-    description="Execute a specific tool on behalf of an agent",
-)
-@inject
-async def execute_agent_tool(
-    agent_id: str,
-    request: AgentToolExecutionRequest,
-    agent_service: AgentService = Depends(Provide[Container.agent_service]),
-):
-    """Execute a tool on behalf of an agent"""
-    result = await agent_service.execute_agent_tool(
-        agent_id=agent_id,
-        tool_name=request.tool_name,
-        parameters=request.parameters,
-        timeout=request.timeout,
-    )
-
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-
-    return result

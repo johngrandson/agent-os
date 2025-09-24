@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -32,3 +32,4 @@ class ResponseLogMiddleware:
             await send(message)
 
         await self.app(scope, receive, _logging_send)
+        return None

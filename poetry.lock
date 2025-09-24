@@ -2,13 +2,13 @@
 
 [[package]]
 name = "agno"
-version = "2.0.7"
+version = "2.0.8"
 description = "Agno: a lightweight library for building Multi-Agent Systems"
 optional = false
 python-versions = "<4,>=3.7"
 files = [
-    {file = "agno-2.0.7-py3-none-any.whl", hash = "sha256:b9f3981847c546b2bbf19884aa489cc1a2691c6cab1ba094e9c338235a7583b2"},
-    {file = "agno-2.0.7.tar.gz", hash = "sha256:78a8588c7c8bba0d25158f1afa5c06d6deac1506e5c698372f6a3eaea19d77a3"},
+    {file = "agno-2.0.8-py3-none-any.whl", hash = "sha256:1a1ec728a957f88aae81e45011be3825ad4ecc034b0e7fb3f19ad11aeab87132"},
+    {file = "agno-2.0.8.tar.gz", hash = "sha256:0f5928f8d7f79456efaeac3439c2480df7aa31aecd4641de9ab62cd84fda2fbc"},
 ]
 
 [package.dependencies]
@@ -275,13 +275,13 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.10.0"
+version = "4.11.0"
 description = "High-level concurrency and networking framework on top of asyncio or Trio"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "anyio-4.10.0-py3-none-any.whl", hash = "sha256:60e474ac86736bbfd6f210f7a61218939c318f43f9972497381f1c5e930ed3d1"},
-    {file = "anyio-4.10.0.tar.gz", hash = "sha256:3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6"},
+    {file = "anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc"},
+    {file = "anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4"},
 ]
 
 [package.dependencies]
@@ -290,7 +290,7 @@ sniffio = ">=1.1"
 typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
-trio = ["trio (>=0.26.1)"]
+trio = ["trio (>=0.31.0)"]
 
 [[package]]
 name = "async-timeout"
@@ -674,6 +674,21 @@ dnspython = ">=2.0.0"
 idna = ">=2.0.0"
 
 [[package]]
+name = "fast-depends"
+version = "2.4.12"
+description = "FastDepends - extracted and cleared from HTTP domain logic FastAPI Dependency Injection System. Async and sync are both supported."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "fast_depends-2.4.12-py3-none-any.whl", hash = "sha256:9e5d110ddc962329e46c9b35e5fe65655984247a13ee3ca5a33186db7d2d75c2"},
+    {file = "fast_depends-2.4.12.tar.gz", hash = "sha256:9393e6de827f7afa0141e54fa9553b737396aaf06bd0040e159d1f790487b16d"},
+]
+
+[package.dependencies]
+anyio = ">=3.0.0,<5.0.0"
+pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<3.0.0"
+
+[[package]]
 name = "fastapi"
 version = "0.117.1"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -743,6 +758,40 @@ uvicorn = {version = ">=0.15.0", extras = ["standard"]}
 
 [package.extras]
 standard = ["uvicorn[standard] (>=0.15.0)"]
+
+[[package]]
+name = "faststream"
+version = "0.5.48"
+description = "FastStream: the simplest way to work with a messaging queues"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "faststream-0.5.48-py3-none-any.whl", hash = "sha256:ee48956405019f82847ba5e1ef5a90ad648338d86bcc377eb8938edd1615c928"},
+    {file = "faststream-0.5.48.tar.gz", hash = "sha256:b7082552e626afd832410752da5d26714f893148fd9f3d2ce431117b3ba5cdb1"},
+]
+
+[package.dependencies]
+anyio = ">=3.7.1,<5"
+fast-depends = ">=2.4.0b0,<3.0.0"
+redis = {version = ">=5.0.0,<7.0.0", optional = true, markers = "extra == \"redis\""}
+typing-extensions = ">=4.8.0"
+
+[package.extras]
+cli = ["typer (>=0.9,!=0.12,<=0.16.0)", "watchfiles (>=0.15.0,<1.2.0)"]
+confluent = ["confluent-kafka (>=2,!=2.8.1,<3)", "confluent-kafka (>=2.6,!=2.8.1,<3)"]
+dev = ["aio-pika (>=9,<10)", "aiokafka (>=0.9,<0.13)", "bandit (==1.7.10)", "bandit (==1.8.6)", "cairosvg", "codespell (==2.4.1)", "confluent-kafka (>=2,!=2.8.1,<3)", "confluent-kafka (>=2.6,!=2.8.1,<3)", "confluent-kafka-stubs", "coverage[toml] (==7.6.1)", "coverage[toml] (==7.9.2)", "detect-secrets (==1.5.0)", "dirty-equals (==0.9.0)", "email-validator (==2.2.0)", "fastapi (==0.116.1)", "httpx (==0.28.1)", "mdx-include (==1.4.2)", "mike (==2.1.3)", "mkdocs-git-revision-date-localized-plugin (==1.4.7)", "mkdocs-glightbox (==0.4.0)", "mkdocs-literate-nav (==0.6.2)", "mkdocs-macros-plugin (==1.3.7)", "mkdocs-material (==9.6.15)", "mkdocs-minify-plugin (==0.8.0)", "mkdocs-static-i18n (==1.3.0)", "mkdocstrings[python] (==0.26.1)", "mkdocstrings[python] (==0.29.1)", "mypy (==1.16.1)", "nats-py (>=2.7.0,<=3.0.0)", "opentelemetry-sdk (>=1.24.0,<2.0.0)", "pillow", "pre-commit (==3.5.0)", "pre-commit (==4.2.0)", "prometheus-client (>=0.20.0,<0.30.0)", "psutil (==7.0.0)", "pydantic-settings (>=2.0.0,<3.0.0)", "pytest (==8.3.5)", "pytest (==8.4.1)", "pytest-asyncio (==0.24.0)", "pytest-asyncio (==1.0.0)", "pyyaml (==6.0.2)", "redis (>=5.0.0,<7.0.0)", "requests", "ruff (==0.12.3)", "semgrep (==1.128.1)", "semgrep (==1.99.0)", "typer (>=0.9,!=0.12,<=0.16.0)", "types-aiofiles", "types-deprecated", "types-docutils", "types-pygments", "types-pyyaml", "types-redis", "types-setuptools", "types-ujson", "typing-extensions (>=4.8.0,<4.12.1)", "uvicorn (==0.33.0)", "uvicorn (>=0.34.3)", "watchfiles (>=0.15.0,<1.2.0)"]
+devdocs = ["cairosvg", "mdx-include (==1.4.2)", "mike (==2.1.3)", "mkdocs-git-revision-date-localized-plugin (==1.4.7)", "mkdocs-glightbox (==0.4.0)", "mkdocs-literate-nav (==0.6.2)", "mkdocs-macros-plugin (==1.3.7)", "mkdocs-material (==9.6.15)", "mkdocs-minify-plugin (==0.8.0)", "mkdocs-static-i18n (==1.3.0)", "mkdocstrings[python] (==0.26.1)", "mkdocstrings[python] (==0.29.1)", "pillow", "requests"]
+kafka = ["aiokafka (>=0.9,<0.13)"]
+lint = ["aio-pika (>=9,<10)", "aiokafka (>=0.9,<0.13)", "bandit (==1.7.10)", "bandit (==1.8.6)", "codespell (==2.4.1)", "confluent-kafka (>=2,!=2.8.1,<3)", "confluent-kafka (>=2.6,!=2.8.1,<3)", "confluent-kafka-stubs", "mypy (==1.16.1)", "nats-py (>=2.7.0,<=3.0.0)", "opentelemetry-sdk (>=1.24.0,<2.0.0)", "prometheus-client (>=0.20.0,<0.30.0)", "redis (>=5.0.0,<7.0.0)", "ruff (==0.12.3)", "semgrep (==1.128.1)", "semgrep (==1.99.0)", "typer (>=0.9,!=0.12,<=0.16.0)", "types-aiofiles", "types-deprecated", "types-docutils", "types-pygments", "types-pyyaml", "types-redis", "types-setuptools", "types-ujson", "watchfiles (>=0.15.0,<1.2.0)"]
+nats = ["nats-py (>=2.7.0,<=3.0.0)"]
+optionals = ["aio-pika (>=9,<10)", "aiokafka (>=0.9,<0.13)", "confluent-kafka (>=2,!=2.8.1,<3)", "confluent-kafka (>=2.6,!=2.8.1,<3)", "nats-py (>=2.7.0,<=3.0.0)", "opentelemetry-sdk (>=1.24.0,<2.0.0)", "prometheus-client (>=0.20.0,<0.30.0)", "redis (>=5.0.0,<7.0.0)", "typer (>=0.9,!=0.12,<=0.16.0)", "watchfiles (>=0.15.0,<1.2.0)"]
+otel = ["opentelemetry-sdk (>=1.24.0,<2.0.0)"]
+prometheus = ["prometheus-client (>=0.20.0,<0.30.0)"]
+rabbit = ["aio-pika (>=9,<10)"]
+redis = ["redis (>=5.0.0,<7.0.0)"]
+test-core = ["coverage[toml] (==7.6.1)", "coverage[toml] (==7.9.2)", "dirty-equals (==0.9.0)", "pytest (==8.3.5)", "pytest (==8.4.1)", "pytest-asyncio (==0.24.0)", "pytest-asyncio (==1.0.0)", "typing-extensions (>=4.8.0,<4.12.1)"]
+testing = ["coverage[toml] (==7.6.1)", "coverage[toml] (==7.9.2)", "dirty-equals (==0.9.0)", "email-validator (==2.2.0)", "fastapi (==0.116.1)", "httpx (==0.28.1)", "psutil (==7.0.0)", "pydantic-settings (>=2.0.0,<3.0.0)", "pytest (==8.3.5)", "pytest (==8.4.1)", "pytest-asyncio (==0.24.0)", "pytest-asyncio (==1.0.0)", "pyyaml (==6.0.2)", "typing-extensions (>=4.8.0,<4.12.1)", "uvicorn (==0.33.0)", "uvicorn (>=0.34.3)"]
+types = ["aio-pika (>=9,<10)", "aiokafka (>=0.9,<0.13)", "confluent-kafka (>=2,!=2.8.1,<3)", "confluent-kafka (>=2.6,!=2.8.1,<3)", "confluent-kafka-stubs", "mypy (==1.16.1)", "nats-py (>=2.7.0,<=3.0.0)", "opentelemetry-sdk (>=1.24.0,<2.0.0)", "prometheus-client (>=0.20.0,<0.30.0)", "redis (>=5.0.0,<7.0.0)", "typer (>=0.9,!=0.12,<=0.16.0)", "types-aiofiles", "types-deprecated", "types-docutils", "types-pygments", "types-pyyaml", "types-redis", "types-setuptools", "types-ujson", "watchfiles (>=0.15.0,<1.2.0)"]
 
 [[package]]
 name = "frozenlist"
@@ -1080,6 +1129,17 @@ files = [
 
 [package.extras]
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
+
+[[package]]
+name = "iniconfig"
+version = "2.1.0"
+description = "brain-dead simple config-ini parsing"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760"},
+    {file = "iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7"},
+]
 
 [[package]]
 name = "jinja2"
@@ -1493,13 +1553,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.108.1"
+version = "1.109.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.108.1-py3-none-any.whl", hash = "sha256:952fc027e300b2ac23be92b064eac136a2bc58274cec16f5d2906c361340d59b"},
-    {file = "openai-1.108.1.tar.gz", hash = "sha256:6648468c1aec4eacfa554001e933a9fa075f57bacfc27588c2e34456cee9fef9"},
+    {file = "openai-1.109.0-py3-none-any.whl", hash = "sha256:8c0910bdd4ee1274d5ff0354786bdd0bc79e68c158d5d2c19e24208b412e5792"},
+    {file = "openai-1.109.0.tar.gz", hash = "sha256:701e26d13e3953524ba99f44cf5fbbda40eafd41ba15a8d85b76229a2693cfe5"},
 ]
 
 [package.dependencies]
@@ -1542,6 +1602,21 @@ files = [
 
 [package.dependencies]
 numpy = "*"
+
+[[package]]
+name = "pluggy"
+version = "1.6.0"
+description = "plugin and hook calling mechanisms for python"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746"},
+    {file = "pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3"},
+]
+
+[package.extras]
+dev = ["pre-commit", "tox"]
+testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
 name = "propcache"
@@ -1932,6 +2007,23 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pyjwt"
+version = "2.10.1"
+description = "JSON Web Token implementation in Python"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb"},
+    {file = "pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953"},
+]
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+
+[[package]]
 name = "pypdf"
 version = "5.9.0"
 description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
@@ -1949,6 +2041,44 @@ dev = ["black", "flit", "pip-tools", "pre-commit", "pytest-cov", "pytest-socket"
 docs = ["myst_parser", "sphinx", "sphinx_rtd_theme"]
 full = ["Pillow (>=8.0.0)", "cryptography"]
 image = ["Pillow (>=8.0.0)"]
+
+[[package]]
+name = "pytest"
+version = "7.4.4"
+description = "pytest: simple powerful testing with Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest-7.4.4-py3-none-any.whl", hash = "sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8"},
+    {file = "pytest-7.4.4.tar.gz", hash = "sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "sys_platform == \"win32\""}
+iniconfig = "*"
+packaging = "*"
+pluggy = ">=0.12,<2.0"
+
+[package.extras]
+testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.21.2"
+description = "Pytest support for asyncio"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest_asyncio-0.21.2-py3-none-any.whl", hash = "sha256:ab664c88bb7998f711d8039cacd4884da6430886ae8bbd4eded552ed2004f16b"},
+    {file = "pytest_asyncio-0.21.2.tar.gz", hash = "sha256:d67738fc232b94b326b9d060750beb16e0074210b98dd8b58a5239fa2a154f45"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0"
+
+[package.extras]
+docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
+testing = ["coverage (>=6.2)", "flaky (>=3.5.0)", "hypothesis (>=5.7.1)", "mypy (>=0.931)", "pytest-trio (>=0.7.0)"]
 
 [[package]]
 name = "python-dotenv"
@@ -2036,6 +2166,25 @@ files = [
     {file = "PyYAML-6.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:39693e1f8320ae4f43943590b49779ffb98acb81f788220ea932a6b6c51004d8"},
     {file = "pyyaml-6.0.2.tar.gz", hash = "sha256:d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"},
 ]
+
+[[package]]
+name = "redis"
+version = "5.3.1"
+description = "Python client for Redis database and key-value store"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "redis-5.3.1-py3-none-any.whl", hash = "sha256:dc1909bd24669cc31b5f67a039700b16ec30571096c5f1f0d9d2324bff31af97"},
+    {file = "redis-5.3.1.tar.gz", hash = "sha256:ca49577a531ea64039b5a36db3d6cd1a0c7a60c34124d46924a45b956e8cf14c"},
+]
+
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
+PyJWT = ">=2.9.0"
+
+[package.extras]
+hiredis = ["hiredis (>=3.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"]
 
 [[package]]
 name = "rich"
@@ -2457,13 +2606,13 @@ telegram = ["requests"]
 
 [[package]]
 name = "typer"
-version = "0.19.1"
+version = "0.19.2"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "typer-0.19.1-py3-none-any.whl", hash = "sha256:914b2b39a1da4bafca5f30637ca26fa622a5bf9f515e5fdc772439f306d5682a"},
-    {file = "typer-0.19.1.tar.gz", hash = "sha256:cb881433a4b15dacc875bb0583d1a61e78497806741f9aba792abcab390c03e6"},
+    {file = "typer-0.19.2-py3-none-any.whl", hash = "sha256:755e7e19670ffad8283db353267cb81ef252f595aa6834a0d1ca9312d9326cb9"},
+    {file = "typer-0.19.2.tar.gz", hash = "sha256:9ad824308ded0ad06cc716434705f691d4ee0bfd0fb081839d2e426860e7fdca"},
 ]
 
 [package.dependencies]
@@ -2527,13 +2676,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uvicorn"
-version = "0.36.0"
+version = "0.36.1"
 description = "The lightning-fast ASGI server."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "uvicorn-0.36.0-py3-none-any.whl", hash = "sha256:6bb4ba67f16024883af8adf13aba3a9919e415358604ce46780d3f9bdc36d731"},
-    {file = "uvicorn-0.36.0.tar.gz", hash = "sha256:527dc68d77819919d90a6b267be55f0e76704dca829d34aea9480be831a9b9d9"},
+    {file = "uvicorn-0.36.1-py3-none-any.whl", hash = "sha256:059086ecb470a021553f17bf860fce2095611d92fb8b669c44325b3435a0a654"},
+    {file = "uvicorn-0.36.1.tar.gz", hash = "sha256:048e68f2a0fe291cd848ed076f18c026e1b0bc69991495f087634ac9a41e8706"},
 ]
 
 [package.dependencies]
@@ -2918,4 +3067,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "629eceb1106ae3026e9dabe740ece5f7d611a08bc0eedccfb57d9cef3745edba"
+content-hash = "e0907eaa6f99b9496feae73740678fcb56f9d5c19d99bd464b5aa884f386f29b"

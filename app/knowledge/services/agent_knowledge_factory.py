@@ -5,7 +5,8 @@ Creates shared knowledge base with agent-specific metadata filtering
 
 import logging
 
-from app.events.bus import EventBus
+from app.events.agents.publisher import AgentEventPublisher
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,9 @@ logger = logging.getLogger(__name__)
 class AgentKnowledgeFactory:
     """Factory for creating shared knowledge base with agent filtering"""
 
-    def __init__(self, db_url: str, event_bus: EventBus):
+    def __init__(self, db_url: str, event_publisher: AgentEventPublisher):
         self.db_url = db_url
-        self.event_bus = event_bus
+        self.event_publisher = event_publisher
 
     async def create_knowledge_for_agent(
         self,
@@ -27,10 +28,10 @@ class AgentKnowledgeFactory:
 
     async def _create_shared_knowledge(self, agent_id: str, agent_name: str):
         """Create shared knowledge base for agent"""
-        from agno.vectordb.pgvector import PgVector
-        from agno.knowledge.embedder.openai import OpenAIEmbedder
         from agno.db.postgres.postgres import PostgresDb
+        from agno.knowledge.embedder.openai import OpenAIEmbedder
         from agno.knowledge.knowledge import Knowledge
+        from agno.vectordb.pgvector import PgVector
         from app.agents.events import AgentEvent
 
         embedder = OpenAIEmbedder()
@@ -47,16 +48,16 @@ class AgentKnowledgeFactory:
             ),
         )
 
-        await self.event_bus.emit(
-            AgentEvent.agent_knowledge_created(
-                agent_id=agent_id,
-                data={
-                    "name": agent_name,
-                    "knowledge_name": knowledge.name,
-                    "knowledge_description": knowledge.description,
-                },
-            )
-        )
+        # TODO: Publish knowledge creation event when needed
+        # await self.event_publisher.publish(
+        #     channel="agent.knowledge.created",
+        #     data={
+        #         "agent_id": agent_id,
+        #         "name": agent_name,
+        #         "knowledge_name": knowledge.name,
+        #         "knowledge_description": knowledge.description,
+        #     }
+        # )
 
         logger.info(f"Created shared knowledge for agent {agent_name}")
         return knowledge

@@ -39,7 +39,7 @@ FROM base AS development
 # Copy application code first
 COPY . .
 
-# Install all dependencies including dev
+# Install all dependencies including dev (before switching user)
 RUN poetry install --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Create non-root user

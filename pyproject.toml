@@ -7,12 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = {extras = ["standard"], version = "^0.117.1"}
+fastapi = { extras = ["standard"], version = "^0.117.1" }
 uvicorn = "^0.36.0"
 openai = "^1.108.1"
 ruff = "^0.13.1"
 dependency-injector = "^4.48.1"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.0" }
 asyncpg = "^0.29.0"
 python-dotenv = "^1.0.0"
 pydantic = "^2.0.0"
@@ -24,8 +24,101 @@ aiohttp = "^3.9.0"
 agno = "^2.0.7"
 psycopg2-binary = "^2.9.10"
 psycopg = "^3.1.0"
+redis = "^5.0.0"
+faststream = { extras = ["redis"], version = "^0.5.0" }
+pytest = "^7.0.0"
+pytest-asyncio = "^0.21.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+# Ruff configuration for import organization
+# Place this file in your project root as 'ruff.toml' or 'pyproject.toml'
+
+[tool.ruff]
+# Set the maximum line length
+line-length = 100
+
+# Python version target
+target-version = "py311"
+
+# Lint rules configured under [tool.ruff.lint]
+
+# Exclude directories from linting
+exclude = [
+  ".git",
+  ".venv",
+  "venv",
+  "__pycache__",
+  ".mypy_cache",
+  ".pytest_cache",
+  "build",
+  "dist",
+  "scripts",
+  "examples",
+]
+
+# Treat these as first-party roots for import classification
+src = ["app", "core", "infrastructure", "scripts", "examples"]
+
+[tool.ruff.lint]
+# Enable specific rule sets
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort (import sorting)
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "DTZ", # flake8-datetimez
+  "T10", # flake8-debugger
+  "EM",  # flake8-errmsg
+  "PIE", # flake8-pie
+  "RSE", # flake8-raise
+  "RET", # flake8-return
+  "SIM", # flake8-simplify
+  "PTH", # flake8-use-pathlib
+]
+
+# Ignore specific rules if needed
+ignore = []
+
+# Per-file ignores
+per-file-ignores = { "app/**/api/*.py" = ["B008"] }
+
+# isort configuration
+[tool.ruff.lint.isort]
+# Known first-party modules
+known-first-party = ["agent_os"]
+
+# Section order for imports
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+
+# Basic isort settings
+combine-as-imports = true
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with 4 spaces
+indent-style = "space"
+
+# Unix-style line endings
+line-ending = "lf"
+
+# Format docstrings
+docstring-code-format = true
+
+# Format code in docstrings with a specific line length
+docstring-code-line-length = 72

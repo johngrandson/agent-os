@@ -1,8 +1,9 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar, Token
 from enum import Enum
-from typing import AsyncGenerator
 
+from core.config import config
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_scoped_session,
@@ -12,7 +13,6 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase, Session
 from sqlalchemy.sql.expression import Delete, Insert, Update
 
-from core.config import config
 
 session_context: ContextVar[str] = ContextVar("session_context")
 
@@ -42,10 +42,9 @@ engines = {
 
 class RoutingSession(Session):
     def get_bind(self, mapper=None, clause=None, **kw):
-        if self._flushing or isinstance(clause, (Update, Delete, Insert)):
+        if self._flushing or isinstance(clause, Update | Delete | Insert):
             return engines[EngineType.WRITER].sync_engine
-        else:
-            return engines[EngineType.READER].sync_engine
+        return engines[EngineType.READER].sync_engine
 
 
 _async_session_factory = async_sessionmaker(

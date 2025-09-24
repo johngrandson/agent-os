@@ -1,22 +1,21 @@
-from fastapi import FastAPI, Depends, Request
+import logging
+
+from app.agents.api.routers import agent_router
+from app.container import Container
+from app.events import setup_broker_with_handlers
+from app.webhook.api.routers import webhook_router
+from core.config import config
+from core.exceptions import CustomException
+from core.fastapi.dependencies import Logging
+from core.fastapi.middlewares import ResponseLogMiddleware, SQLAlchemyMiddleware
+from core.logging_config import configure_logging
+from dotenv import load_dotenv
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from dotenv import load_dotenv
-import logging
-
-from app.container import ApplicationContainer
-from core.logging_config import configure_logging
-from core.config import config
-from app.agents.api.routers import agent_router
-from app.tools.api.routers import router as tool_router
-from app.events.api.routers import router as event_router
-from app.events.api.websocket_router import router as websocket_router
-
-from core.exceptions import CustomException
-from core.fastapi.middlewares import SQLAlchemyMiddleware, ResponseLogMiddleware
-from core.fastapi.dependencies import Logging
 
 # Load environment variables
 load_dotenv()
@@ -61,31 +60,31 @@ def setup_routes(app: FastAPI):
 
     @app.get("/api/v1/health")
     async def health_check():
+        """Basic health check endpoint"""
         return {"status": "healthy", "service": "agent-os"}
 
     app.include_router(agent_router, prefix="/api/v1/agents")
-    app.include_router(tool_router, prefix="/api/v1")
-    app.include_router(event_router, prefix="/api/v1")
-    app.include_router(websocket_router, prefix="/api/v1")
+    app.include_router(webhook_router, prefix="/api/v1")
 
 
-def setup_dependency_injection(container: ApplicationContainer):
+def setup_dependency_injection(container: Container):
     """Configure dependency injection"""
     container.wire(
         modules=[
             "app.agents.api.routers",
-            "app.tools.api.routers",
+            "app.webhook.api.routers",
         ]
     )
-    agent_router.container = container
-    tool_router.container = container
 
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
     # Create container and setup DI
-    container = ApplicationContainer()
+    container = Container()
     setup_dependency_injection(container)
+
+    # Setup event broker with all registered handlers
+    setup_broker_with_handlers()
 
     bootstrapper = container.application_bootstrapper()
 
@@ -106,7 +105,6 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def initialize_on_startup():
         await bootstrapper.initialize_database()
-        await bootstrapper.initialize_tools()
         await bootstrapper.initialize_event_system()
 
         nonlocal app
@@ -115,4 +113,4 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+# App should be created by the ASGI server or startup script

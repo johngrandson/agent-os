@@ -24,7 +24,8 @@ class CacheManager:
             @wraps(function)
             async def __cached(*args, **kwargs):
                 if not self.backend or not self.key_maker:
-                    raise Exception("backend or key_maker is None")
+                    msg = "backend or key_maker is None"
+                    raise Exception(msg)
 
                 key = await self.key_maker.make(
                     function=function,

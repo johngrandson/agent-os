@@ -1,8 +1,6 @@
-"""
-Agent domain events
-"""
+"""Agent events module"""
 
-from .types import AgentEventType
 from .events import AgentEvent
 
-__all__ = ["AgentEventType", "AgentEvent"]
+
+__all__ = ["AgentEvent"]

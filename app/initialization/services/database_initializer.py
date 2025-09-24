@@ -3,10 +3,12 @@ Database initialization service
 """
 
 import logging
-import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from infrastructure.database import Base
-from infrastructure.database.session import engines, EngineType
+from infrastructure.database.session import EngineType, engines
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +21,13 @@ class DatabaseInitializer:
 
     def _ensure_environment_loaded(self):
         """Ensure environment variables are loaded with local override"""
-        if os.path.exists(".env.local"):
+        if Path(".env.local").exists():
             load_dotenv(".env.local", override=True)
         else:
             load_dotenv(override=True)
 
     def _import_models(self):
         """Import all models to ensure they are registered with SQLAlchemy"""
-        from app.agents.agent import Agent
 
     async def initialize(self):
         """Initialize database tables"""

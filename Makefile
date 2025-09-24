@@ -194,8 +194,3 @@ restart: ## Restart the development server
 ci-test: ## Run all CI tests
 	$(MAKE) lint
 	$(MAKE) test-coverage
-
-check: ## Check everything (lint, test, etc.)
-	$(MAKE) lint
-	$(MAKE) test
-	@echo "✓ All checks passed!"

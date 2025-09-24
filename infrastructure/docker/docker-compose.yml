@@ -50,7 +50,8 @@ services:
         max-file: "3"
     command: >
       sh -c "poetry install --no-root &&
-      poetry run uvicorn app.server:app
+      poetry run uvicorn app.server:create_app
+      --factory
       --host 0.0.0.0
       --port 8000
       --reload
@@ -60,8 +61,22 @@ services:
       --log-level info
       --access-log"
     depends_on:
+      waha:
+        condition: service_started
       postgres:
         condition: service_healthy
 
+  waha:
+    env_file:
+      - ../../.env
+    image: devlikeapro/waha:latest
+    container_name: waha
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - waha_data:/app/.sessions
+
 volumes:
   postgres_data:
+  waha_data:

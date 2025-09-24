@@ -6,11 +6,13 @@ Create Date: 2025-09-21 18:42:00.000000
 
 """
 
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from pgvector.sqlalchemy import Vector
 import uuid
+
+import sqlalchemy as sa
+from alembic import op
+from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects import postgresql
+
 
 # revision identifiers, used by Alembic.
 revision = "initial_uuid"
@@ -25,9 +27,7 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.create_table(
         "agents",
-        sa.Column(
-            "id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4
-        ),
+        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("phone_number", sa.String(length=255), nullable=False),
         sa.Column("description", sa.String(length=1000), nullable=True),
@@ -58,9 +58,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "knowledge_contents",
-        sa.Column(
-            "id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4
-        ),
+        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column("agent_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
@@ -74,17 +72,13 @@ def upgrade() -> None:
     )
     op.create_table(
         "knowledge_vectors",
-        sa.Column(
-            "id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4
-        ),
+        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column("content_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("chunk_text", sa.Text(), nullable=False),
         sa.Column("embedding", Vector(1536), nullable=True),
         sa.Column("content_metadata", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["content_id"], ["knowledge_contents.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["content_id"], ["knowledge_contents.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     # ### end Alembic commands ###

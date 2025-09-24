@@ -1,11 +1,10 @@
 """Agent Repository - direct SQLAlchemy implementation"""
 
 import uuid
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.agents.agent import Agent
 from infrastructure.database.session import get_session
+from sqlalchemy import select
 
 
 class AgentRepository:
@@ -38,9 +37,7 @@ class AgentRepository:
             stmt = await session.execute(select(Agent).where(Agent.id == agent_id))
             return stmt.scalars().first()
 
-    async def get_agent_by_id_with_relations(
-        self, *, agent_id: uuid.UUID
-    ) -> Agent | None:
+    async def get_agent_by_id_with_relations(self, *, agent_id: uuid.UUID) -> Agent | None:
         """Find agent by ID with config eagerly loaded"""
         async with get_session() as session:
             stmt = select(Agent).where(Agent.id == agent_id)
@@ -50,9 +47,7 @@ class AgentRepository:
     async def get_agent_by_phone_number(self, *, phone_number: str) -> Agent | None:
         """Find agent by phone number"""
         async with get_session() as session:
-            stmt = await session.execute(
-                select(Agent).where(Agent.phone_number == phone_number)
-            )
+            stmt = await session.execute(select(Agent).where(Agent.phone_number == phone_number))
             return stmt.scalars().first()
 
     async def get_agents_by_status(

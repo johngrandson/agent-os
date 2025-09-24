@@ -6,13 +6,9 @@ from core.exceptions import CustomException
 class DomainException(CustomException):
     """Base domain exception"""
 
-    pass
-
 
 class AgentException(DomainException):
     """Agent-related exceptions"""
-
-    pass
 
 
 class AgentNotFound(AgentException):
@@ -30,8 +26,6 @@ class AgentAlreadyExists(AgentException):
 class CustomerException(DomainException):
     """Customer-related exceptions"""
 
-    pass
-
 
 class CustomerNotFound(CustomerException):
     code = 404
@@ -47,8 +41,6 @@ class CustomerAlreadyExists(CustomerException):
 
 class AgentConfigException(DomainException):
     """Agent configuration-related exceptions"""
-
-    pass
 
 
 class AgentConfigNotFound(AgentConfigException):

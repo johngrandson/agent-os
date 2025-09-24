@@ -62,10 +62,10 @@ def test_should_describe_expected_behavior_when_condition():
     # Arrange - Set up test data and mocks
     user = create_test_user()
     repository = Mock()
-    
+
     # Act - Execute the behavior
     result = service.process_user(user, repository)
-    
+
     # Assert - Verify expectations
     assert result.status == "success"
     repository.save.assert_called_once_with(user)

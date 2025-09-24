@@ -3,8 +3,10 @@ Startup module - Handles application initialization using dependency injection
 """
 
 import logging
-from dependency_injector.wiring import inject, Provide
-from app.container import ApplicationContainer as Container
+
+from app.container import Container
+from dependency_injector.wiring import Provide, inject
+
 
 logger = logging.getLogger(__name__)
 

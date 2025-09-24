@@ -1,11 +1,12 @@
 from .logging import Logging
 from .permission import (
-    PermissionDependency,
     AllowAll,
+    PermissionDependency,
 )
 
+
 __all__ = [
+    "AllowAll",
     "Logging",
     "PermissionDependency",
-    "AllowAll",
 ]

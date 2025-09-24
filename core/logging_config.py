@@ -2,15 +2,14 @@
 Logging configuration for the application
 """
 
-import logging
 import sys
-from typing import Dict, Any
+from typing import Any
 
 
-def setup_logging(level: str = "INFO") -> Dict[str, Any]:
+def setup_logging(level: str = "INFO") -> dict[str, Any]:
     """Setup logging configuration for the application"""
 
-    config = {
+    return {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -19,7 +18,10 @@ def setup_logging(level: str = "INFO") -> Dict[str, Any]:
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "detailed": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(funcName)s:%(lineno)d - %(message)s",
+                "format": (
+                    "%(asctime)s - %(name)s - %(levelname)s - "
+                    "%(module)s:%(funcName)s:%(lineno)d - %(message)s"
+                ),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
@@ -59,8 +61,6 @@ def setup_logging(level: str = "INFO") -> Dict[str, Any]:
             "handlers": ["console"],
         },
     }
-
-    return config
 
 
 def configure_logging(debug: bool = False) -> None:

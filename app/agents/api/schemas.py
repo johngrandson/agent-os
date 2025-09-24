@@ -1,8 +1,8 @@
 """Agent API schemas - consolidated request/response models"""
 
 import uuid
-from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # Request Models
@@ -11,13 +11,11 @@ class CreateAgentRequest(BaseModel):
 
     name: str = Field(..., description="Agent name")
     phone_number: str = Field(..., description="Agent phone number")
-    description: Optional[str] = Field(None, description="Agent description")
-    instructions: Optional[List[str]] = Field(None, description="Agent instructions")
+    description: str | None = Field(None, description="Agent description")
+    instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool = Field(default=False, description="Agent active status")
-    available_tools: Optional[List[str]] = Field(None, description="Available tools")
-    tool_configurations: Optional[Dict[str, Any]] = Field(
-        None, description="Tool configurations"
-    )
+    whatsapp_enabled: bool = Field(default=False, description="WhatsApp enabled status")
+    whatsapp_token: str | None = Field(None, description="WhatsApp token")
 
 
 class UpdateAgentRequest(BaseModel):
@@ -25,13 +23,11 @@ class UpdateAgentRequest(BaseModel):
 
     name: str = Field(None, description="Agent name")
     phone_number: str = Field(None, description="Agent phone number")
-    description: Optional[str] = Field(None, description="Agent description")
-    instructions: Optional[List[str]] = Field(None, description="Agent instructions")
+    description: str | None = Field(None, description="Agent description")
+    instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool = Field(None, description="Agent active status")
-    available_tools: Optional[List[str]] = Field(None, description="Available tools")
-    tool_configurations: Optional[Dict[str, Any]] = Field(
-        None, description="Tool configurations"
-    )
+    whatsapp_enabled: bool | None = Field(None, description="WhatsApp enabled status")
+    whatsapp_token: str | None = Field(None, description="WhatsApp token")
 
 
 # Related Entity Schemas
@@ -63,13 +59,9 @@ class AgentResponse(BaseModel):
     id: str = Field(..., description="Agent ID")
     name: str = Field(..., description="Agent name")
     phone_number: str = Field(..., description="Agent phone number")
-    description: Optional[str] = Field(None, description="Agent description")
-    instructions: Optional[List[str]] = Field(None, description="Agent instructions")
+    description: str | None = Field(None, description="Agent description")
+    instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool = Field(..., description="Agent active status")
-    available_tools: Optional[List[str]] = Field(None, description="Available tools")
-    tool_configurations: Optional[Dict[str, Any]] = Field(
-        None, description="Tool configurations"
-    )
 
     @field_validator("id", mode="before")
     @classmethod
@@ -102,11 +94,9 @@ class CreateAgentCommand(BaseModel):
 
     name: str
     phone_number: str
-    description: Optional[str] = None
-    instructions: Optional[List[str]] = None
+    description: str | None = None
+    instructions: list[str] | None = None
     is_active: bool
-    available_tools: Optional[List[str]] = None
-    tool_configurations: Optional[Dict[str, Any]] = None
 
 
 class UpdateAgentCommand(BaseModel):
@@ -115,38 +105,6 @@ class UpdateAgentCommand(BaseModel):
     agent_id: str
     name: str
     phone_number: str
-    description: Optional[str] = None
-    instructions: Optional[List[str]] = None
+    description: str | None = None
+    instructions: list[str] | None = None
     is_active: bool
-    available_tools: Optional[List[str]] = None
-    tool_configurations: Optional[Dict[str, Any]] = None
-
-
-# New schemas for agent capabilities and tool execution
-class AgentCapabilitiesResponse(BaseModel):
-    """Agent capabilities response"""
-
-    agent_id: str
-    name: str
-    available_tools: List[str] = []
-    tool_definitions: List[Dict[str, Any]] = []
-    tool_configurations: Dict[str, Any] = {}
-
-
-class AgentToolExecutionRequest(BaseModel):
-    """Request to execute a tool for an agent"""
-
-    tool_name: str
-    parameters: Dict[str, Any]
-    timeout: Optional[float] = None
-
-
-class AgentToolExecutionResponse(BaseModel):
-    """Response from agent tool execution"""
-
-    agent_id: str
-    tool_name: str
-    status: str
-    data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    execution_time: Optional[float] = None

@@ -5,20 +5,15 @@ Seeder para criar agentes básicos e conhecimento em português (pt-BR)
 
 import asyncio
 import sys
-import os
 import uuid
 from pathlib import Path
-from typing import List
+
 
 # Adicionar o diretório raiz ao path
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
-from app.container import ApplicationContainer as Container
-from app.agents.agent import Agent
-from app.agents.api.schemas import CreateAgentCommand
-from infrastructure.database import Base
-from infrastructure.database.session import engines, EngineType
+f
 
 
 class AgentSeeder:
@@ -33,7 +28,7 @@ class AgentSeeder:
 
         except Exception as e:
             print(f"❌ Erro na inicialização: {type(e).__name__}")
-            print(f"   📋 Detalhes: {str(e)}")
+            print(f"   📋 Detalhes: {e!s}")
             import traceback
 
             traceback.print_exc()
@@ -44,7 +39,7 @@ class AgentSeeder:
         async with engines[EngineType.WRITER].begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def seed_agents(self) -> List[Agent]:
+    async def seed_agents(self) -> list[Agent]:
         """Criar agentes básicos em português"""
         agents_data = [
             {
@@ -93,14 +88,13 @@ class AgentSeeder:
                     # Log do traceback para debugging
                     import traceback
 
-                    print(f"   📊 Stack trace:")
+                    print("   📊 Stack trace:")
                     traceback.print_exc()
 
         return created_agents
 
     async def run(self):
         """Executar o seeder"""
-        from infrastructure.database.session import set_session_context
 
         try:
             session_id = str(uuid.uuid4())
@@ -126,7 +120,6 @@ class AgentSeeder:
 
             finally:
                 # Limpar contexto
-                from infrastructure.database.session import reset_session_context
 
                 reset_session_context(context_token)
 
@@ -137,7 +130,7 @@ class AgentSeeder:
             print(f"   📋 Detalhes: {error_message}")
             import traceback
 
-            print(f"   📊 Stack trace completo:")
+            print("   📊 Stack trace completo:")
             traceback.print_exc()
             raise
 

@@ -1,31 +1,77 @@
 import os
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
 class Config(BaseSettings):
+    """Simplified application configuration"""
+
+    # Application Settings
     ENV: str = "development"
     DEBUG: bool = True
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
-    WRITER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
-    READER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
+    HOST_API: str = ""
+    API_KEY: str = ""
+    SENTRY_SDN: str = ""
 
-    # Database configuration
+    # Database Configuration
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "fastapi"
     POSTGRES_USER: str = "fastapi"
     POSTGRES_PASSWORD: str = "fastapi"
+    WRITER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
+    READER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
+    AGNO_DB_URL: str = ""
+
+    # Security Configuration
     JWT_SECRET_KEY: str = "fastapi"
     JWT_ALGORITHM: str = "HS256"
-    SENTRY_SDN: str = ""
-
-    # Encryption key for sensitive data
     ENCRYPTION_KEY: str = ""
 
-    HOST_API: str = ""
-    API_KEY: str = ""
+    # Agent Configuration
+    AGNO_DEFAULT_MODEL: str = "gpt-4o-mini"
+    OPENAI_API_KEY: str | None = None
+
+    # WAHA (WhatsApp API) Configuration
+    WAHA_API_URL: str = "http://waha:3000/api"
+    WAHA_BASE_URL: str = "http://waha:3000"
+    WAHA_API_KEY: str = ""
+    WAHA_SESSION_NAME: str = "default"
+    WAHA_LOG_FORMAT: str = "JSON"
+
+    # Webhook Configuration
+    WHATSAPP_HOOK_URL: str = "http://api:8000/api/v1/waha/webhook"
+    WHATSAPP_HOOK_EVENTS: str = "message,session.status"
+    WHATSAPP_HOOK_RETRIES_ATTEMPTS: int = 4
+    WHATSAPP_HOOK_RETRIES_DELAY_SECONDS: int = 3
+
+    # Redis Configuration
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str | None = None
+    REDIS_URL: str = ""
+    REDIS_MAX_CONNECTIONS: int = 20
+    REDIS_CONNECTION_POOL_SIZE: int = 10
+    REDIS_CONNECTION_TIMEOUT: int = 5
+    REDIS_RETRY_ATTEMPTS: int = 3
+    REDIS_RETRY_DELAY: float = 1.0
+
+    # Event System Configuration
+    USE_REDIS_EVENTS: bool = False
+    REDIS_EVENT_CHANNEL_PREFIX: str = "agent_os_events"
+    REDIS_EVENT_HISTORY_TTL: int = 604800  # 7 days in seconds
+    REDIS_EVENT_MAX_HISTORY: int = 10000
+
+    @field_validator("OPENAI_API_KEY")
+    @classmethod
+    def validate_openai_key(cls, v):
+        if v and not v.startswith("sk-"):
+            raise ValueError("OpenAI API key must start with sk-")
+        return v
 
     @property
     def database_url(self) -> str:
@@ -34,51 +80,47 @@ class Config(BaseSettings):
             return self.WRITER_DB_URL
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
+    @property
+    def redis_url(self) -> str:
+        """Construct Redis URL from components"""
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
     class Config:
         env_file = ".env"
+        case_sensitive = True
+        extra = "ignore"
 
 
-class TestConfig(Config):
-    DEBUG: bool = False
-
-    class Config:
-        extra = "ignore"  # Ignore extra fields from environment
-
-
-class E2EConfig(Config):
-    DEBUG: bool = False
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5433  # Different port for E2E
-    POSTGRES_DB: str = "fastapi_e2e"
-    POSTGRES_USER: str = "fastapi_e2e"
-    POSTGRES_PASSWORD: str = "fastapi_e2e_test"
-
-    class Config:
-        extra = "ignore"  # Ignore extra fields from environment
+# Environment-specific overrides
+_env_overrides = {
+    "test": {"DEBUG": False},
+    "e2e": {
+        "DEBUG": False,
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": 5433,
+        "POSTGRES_DB": "fastapi_e2e",
+        "POSTGRES_USER": "fastapi_e2e",
+        "POSTGRES_PASSWORD": "fastapi_e2e_test",
+    },
+    "prod": {"DEBUG": False},
+}
 
 
-class LocalConfig(Config):
-    class Config:
-        extra = "ignore"  # Ignore extra fields from environment
-
-
-class ProductionConfig(Config):
-    DEBUG: bool = False
-
-    class Config:
-        extra = "ignore"  # Ignore extra fields from environment
-
-
-def get_config():
+def get_config() -> Config:
+    """Get configuration with environment-specific overrides"""
     env = os.getenv("ENV", "local")
-    config_type = {
-        "test": TestConfig(),
-        "e2e": E2EConfig(),
-        "local": LocalConfig(),
-        "dev": LocalConfig(),  # Map 'dev' to LocalConfig for Docker Compose
-        "prod": ProductionConfig(),
-    }
-    return config_type.get(env, LocalConfig())
+    config = Config()
+
+    # Apply environment-specific overrides
+    if env in _env_overrides:
+        for key, value in _env_overrides[env].items():
+            setattr(config, key, value)
+
+    return config
 
 
 config: Config = get_config()
