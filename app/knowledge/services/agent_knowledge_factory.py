@@ -32,7 +32,7 @@ class AgentKnowledgeFactory:
         from agno.knowledge.embedder.openai import OpenAIEmbedder
         from agno.knowledge.knowledge import Knowledge
         from agno.vectordb.pgvector import PgVector
-        from app.agents.events import AgentEvent
+        from app.events.agents.events import AgentEvent
 
         embedder = OpenAIEmbedder()
         db = PostgresDb(db_url=self.db_url, knowledge_table="knowledge_contents")

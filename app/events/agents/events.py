@@ -1,7 +1,7 @@
 """Agent domain events"""
 
 from dataclasses import dataclass
-from typing import Any, Dict, TypedDict
+from typing import Any, TypedDict
 
 from app.events.core.base import BaseEvent
 
@@ -19,12 +19,12 @@ class AgentEvent(BaseEvent):
     """Agent-specific event"""
 
     @classmethod
-    def created(cls, agent_id: str, agent_data: Dict[str, Any]) -> "AgentEvent":
+    def created(cls, agent_id: str, agent_data: dict[str, Any]) -> "AgentEvent":
         """Create agent created event"""
         return cls(entity_id=agent_id, event_type="created", data=agent_data)
 
     @classmethod
-    def updated(cls, agent_id: str, agent_data: Dict[str, Any]) -> "AgentEvent":
+    def updated(cls, agent_id: str, agent_data: dict[str, Any]) -> "AgentEvent":
         """Create agent updated event"""
         return cls(entity_id=agent_id, event_type="updated", data=agent_data)
 
@@ -34,6 +34,6 @@ class AgentEvent(BaseEvent):
         return cls(entity_id=agent_id, event_type="deleted", data={})
 
     @classmethod
-    def knowledge_created(cls, agent_id: str, knowledge_data: Dict[str, Any]) -> "AgentEvent":
+    def knowledge_created(cls, agent_id: str, knowledge_data: dict[str, Any]) -> "AgentEvent":
         """Create agent knowledge created event"""
         return cls(entity_id=agent_id, event_type="knowledge_created", data=knowledge_data)

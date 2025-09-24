@@ -1,7 +1,7 @@
 """Event registry for managing handlers and publishers"""
 
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Callable
 
 from faststream.redis import RedisRouter
 
@@ -13,8 +13,8 @@ class EventRegistry:
     """Registry for managing event handlers across different domains"""
 
     def __init__(self):
-        self._routers: Dict[str, RedisRouter] = {}
-        self._handlers: Dict[str, List[Callable]] = {}
+        self._routers: dict[str, RedisRouter] = {}
+        self._handlers: dict[str, list[Callable]] = {}
 
     def register_domain_router(self, domain: str, router: RedisRouter) -> None:
         """Register a domain-specific router"""
@@ -27,7 +27,7 @@ class EventRegistry:
             raise ValueError(f"No router registered for domain: {domain}")
         return self._routers[domain]
 
-    def get_all_routers(self) -> List[RedisRouter]:
+    def get_all_routers(self) -> list[RedisRouter]:
         """Get all registered routers"""
         return list(self._routers.values())
 
@@ -38,7 +38,7 @@ class EventRegistry:
         self._handlers[channel].append(handler)
         logger.info(f"Registered handler for channel: {channel}")
 
-    def get_handlers(self, channel: str) -> List[Callable]:
+    def get_handlers(self, channel: str) -> list[Callable]:
         """Get all handlers for a channel"""
         return self._handlers.get(channel, [])
 

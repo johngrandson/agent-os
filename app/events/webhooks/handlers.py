@@ -198,9 +198,6 @@ async def handle_message_processed(data: WebhookEventPayload):
     logger.info(f"Webhook message processed for session: {session_id}")
     logger.debug(f"Processing result: {processing_data}")
 
-    # Add any message processing side effects here
-    # e.g., update metrics, send confirmations
-
 
 @webhook_router.subscriber("webhook.session_status_changed")
 async def handle_session_status_changed(data: WebhookEventPayload):
@@ -210,9 +207,6 @@ async def handle_session_status_changed(data: WebhookEventPayload):
 
     logger.info(f"Session status changed for: {session_id}")
     logger.debug(f"Status data: {status_data}")
-
-    # Add any status change side effects here
-    # e.g., update session store, notify administrators
 
 
 async def _attempt_message_retry(session_id: str, webhook_data_dict: dict, agent_id: str) -> bool:
@@ -319,7 +313,6 @@ async def handle_ai_response_generated(data: WebhookEventPayload):
 
     except Exception as e:
         logger.error(f"Error handling AI response generated event: {e}")
-        # Consider implementing retry logic for response sending failures
 
 
 @webhook_router.subscriber("webhook.response_sent")
@@ -330,9 +323,6 @@ async def handle_response_sent(data: WebhookEventPayload):
 
     logger.info(f"Response sent for session: {session_id}")
     logger.debug(f"Sent data: {sent_data}")
-
-    # Add any response sent side effects here
-    # e.g., update metrics, log conversation, update session state
 
 
 # Register the router with the event registry

@@ -3,7 +3,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Protocol
+from typing import Any, Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class BaseEvent:
 
     entity_id: str
     event_type: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
 class EventPublisher(Protocol):
