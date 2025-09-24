@@ -19,17 +19,9 @@ class Agent(Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     instructions: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=False)
+    llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    default_language: Mapped[str | None] = mapped_column(String(10), nullable=True, default="pt-BR")
 
-    # Tool configuration fields
-    available_tools: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    tool_configurations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-
-    # Knowledge configuration field
-    knowledge_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-
-    # WhatsApp integration fields
-    whatsapp_enabled: Mapped[bool] = mapped_column(default=False)
-    whatsapp_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     @classmethod
     def create(
@@ -40,11 +32,8 @@ class Agent(Base, TimestampMixin):
         description: str | None = None,
         instructions: list[str] | None = None,
         is_active: bool,
-        available_tools: list[str] | None = None,
-        tool_configurations: dict | None = None,
-        knowledge_config: dict | None = None,
-        whatsapp_enabled: bool = False,
-        whatsapp_token: str | None = None,
+        llm_model: str | None = None,
+        default_language: str | None = "pt-BR",
     ) -> Agent:
         return cls(
             name=name,
@@ -52,11 +41,8 @@ class Agent(Base, TimestampMixin):
             description=description,
             instructions=instructions,
             is_active=is_active,
-            available_tools=available_tools,
-            tool_configurations=tool_configurations,
-            knowledge_config=knowledge_config,
-            whatsapp_enabled=whatsapp_enabled,
-            whatsapp_token=whatsapp_token,
+            llm_model=llm_model,
+            default_language=default_language,
         )
 
 
@@ -67,9 +53,7 @@ class AgentRead(BaseModel):
     name: str = Field(..., title="Name")
     phone_number: str = Field(..., title="Phone Number")
     description: str | None = Field(None, title="Description")
+    instructions: list[str] | None = Field(None, title="Instructions")
     is_active: bool = Field(..., title="Is Active")
-    available_tools: list[str] | None = Field(None, title="Available Tools")
-    tool_configurations: dict | None = Field(None, title="Tool Configurations")
-    knowledge_config: dict | None = Field(None, title="Knowledge Configuration")
-    whatsapp_enabled: bool = Field(..., title="WhatsApp Enabled")
-    whatsapp_token: str | None = Field(None, title="WhatsApp Token")
+    llm_model: str | None = Field(None, title="LLM Model")
+    default_language: str | None = Field("pt-BR", title="Default Language")

@@ -42,6 +42,8 @@ class AgentService:
             description=command.description,
             instructions=command.instructions,
             is_active=command.is_active,
+            default_language=command.default_language,
+            llm_model=command.llm_model,
         )
         await self.repository.create_agent(agent=agent)
 
@@ -51,6 +53,9 @@ class AgentService:
             agent_data={
                 "name": agent.name,
                 "is_active": agent.is_active,
+                "phone_number": agent.phone_number,
+                "llm_model": agent.llm_model,
+                "default_language": agent.default_language,
             },
         )
 
@@ -88,7 +93,8 @@ class AgentService:
         agent.description = command.description
         agent.instructions = command.instructions
         agent.is_active = command.is_active
-        agent.available_tools = command.available_tools
+        agent.llm_model = command.llm_model
+        agent.default_language = command.default_language
 
         await self.repository.update_agent(agent=agent)
 

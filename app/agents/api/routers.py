@@ -12,9 +12,9 @@ from app.agents.services.agent_service import AgentService
 from app.container import Container
 from core.exceptions.domain import AgentNotFound
 from dependency_injector.wiring import Provide, inject
+from fastapi.responses import Response
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import Response
 
 
 agent_router = APIRouter()
@@ -130,24 +130,12 @@ async def update_agent(
         command = UpdateAgentCommand(
             agent_id=agent_id,
             name=request.name if request.name is not None else current_agent.name,
-            phone_number=request.phone_number
-            if request.phone_number is not None
-            else current_agent.phone_number,
-            description=request.description
-            if request.description is not None
-            else current_agent.description,
-            instructions=request.instructions
-            if request.instructions is not None
-            else current_agent.instructions,
-            is_active=request.is_active
-            if request.is_active is not None
-            else current_agent.is_active,
-            available_tools=request.available_tools
-            if request.available_tools is not None
-            else current_agent.available_tools,
-            tool_configurations=request.tool_configurations
-            if request.tool_configurations is not None
-            else current_agent.tool_configurations,
+            phone_number=request.phone_number if request.phone_number is not None else current_agent.phone_number,
+            description=request.description if request.description is not None else current_agent.description,
+            instructions=request.instructions if request.instructions is not None else current_agent.instructions,
+            is_active=request.is_active if request.is_active is not None else current_agent.is_active,
+            llm_model=request.llm_model if request.llm_model is not None else current_agent.llm_model,
+            default_language=request.default_language if request.default_language is not None else current_agent.default_language,
         )
 
         updated_agent = await agent_service.update_agent(command=command)

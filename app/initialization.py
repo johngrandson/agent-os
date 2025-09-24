@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from infrastructure.database import Base
 from infrastructure.database.session import EngineType, engines
 
+from fastapi import FastAPI
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ class AgentCache:
                 "No active agents found in database. At least one active agent is required "
                 "for the application."
             )
-            raise RuntimeError(msg)
+            logger.info(msg)
 
         logger.info(f"Successfully loaded {len(self._agno_agents)} agents")
         return self._loaded_agents, self._agno_agents
@@ -78,11 +80,20 @@ async def initialize_database():
         raise
 
 
-def setup_agent_os_with_app(agno_agents, fastapi_app):
+def setup_agent_os_with_app(agno_agents: list[AgnoAgent], fastapi_app: FastAPI) -> FastAPI:
     """Setup AgentOS with FastAPI app - direct and simple"""
     if not agno_agents:
         msg = "No agents loaded for AgentOS setup"
-        raise RuntimeError(msg)
+        logger.info(msg)
+
+    if len(agno_agents) == 0:
+        agno_agents.append(
+            AgnoAgent(
+                id="default-agent",
+                name="Default Agent",
+                description="A default agent created because no agents were found.",
+            )
+        )
 
     logger.info(f"Setting up AgentOS with {len(agno_agents)} agents")
     agent_os = AgentOS(agents=agno_agents, fastapi_app=fastapi_app)

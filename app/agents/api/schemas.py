@@ -14,8 +14,8 @@ class CreateAgentRequest(BaseModel):
     description: str | None = Field(None, description="Agent description")
     instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool = Field(default=False, description="Agent active status")
-    whatsapp_enabled: bool = Field(default=False, description="WhatsApp enabled status")
-    whatsapp_token: str | None = Field(None, description="WhatsApp token")
+    llm_model: str | None = Field(None, description="LLM model to use")
+    default_language: str | None = Field("pt-BR", description="Default language for responses")
 
 
 class UpdateAgentRequest(BaseModel):
@@ -26,11 +26,8 @@ class UpdateAgentRequest(BaseModel):
     description: str | None = Field(None, description="Agent description")
     instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool | None = Field(None, description="Agent active status")
-    whatsapp_enabled: bool | None = Field(None, description="WhatsApp enabled status")
-    whatsapp_token: str | None = Field(None, description="WhatsApp token")
-    available_tools: list[str] | None = Field(None, description="Available tools")
-    tool_configurations: dict | None = Field(None, description="Tool configurations")
-
+    llm_model: str | None = Field(None, description="LLM model to use")
+    default_language: str | None = Field("pt-BR", description="Default language for responses")
 
 # Related Entity Schemas
 class PromptResponse(BaseModel):
@@ -64,6 +61,8 @@ class AgentResponse(BaseModel):
     description: str | None = Field(None, description="Agent description")
     instructions: list[str] | None = Field(None, description="Agent instructions")
     is_active: bool = Field(..., description="Agent active status")
+    llm_model: str | None = Field(None, description="LLM model to use")
+    default_language: str | None = Field("pt-BR", description="Default language for responses")
 
     @field_validator("id", mode="before")
     @classmethod
@@ -99,6 +98,8 @@ class CreateAgentCommand(BaseModel):
     description: str | None = None
     instructions: list[str] | None = None
     is_active: bool
+    llm_model: str | None = None
+    default_language: str | None = "pt-BR"
 
 
 class UpdateAgentCommand(BaseModel):
@@ -110,5 +111,6 @@ class UpdateAgentCommand(BaseModel):
     description: str | None = None
     instructions: list[str] | None = None
     is_active: bool
-    available_tools: list[str] | None = None
-    tool_configurations: dict | None = None
+    llm_model: str | None = None
+    default_language: str | None = "pt-BR"
+

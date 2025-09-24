@@ -29,7 +29,7 @@ class AgnoConversionConfig:
         return AgnoConversionConfig(
             markdown=True,  # WhatsApp supports markdown
             continue_on_error=True,  # Don't fail if one agent fails
-            agent_filter=lambda agent: agent.whatsapp_enabled and bool(agent.whatsapp_token),
+            agent_filter=lambda agent: agent.is_active,
         )
 
     @staticmethod

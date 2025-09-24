@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from fastapi.openapi.models import APIKey, APIKeyIn
+from fastapi.security.base import SecurityBase
 from starlette import status
 
 from core.exceptions import CustomException
 from fastapi import Request
-from fastapi.openapi.models import APIKey, APIKeyIn
-from fastapi.security.base import SecurityBase
 
 
 class UnauthorizedException(CustomException):

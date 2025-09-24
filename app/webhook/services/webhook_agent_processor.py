@@ -28,7 +28,7 @@ class WebhookAgentProcessor:
 
         for db_agent in db_agents:
             if str(db_agent.id) == agent_id:
-                return bool(db_agent.whatsapp_enabled)
+                return bool(db_agent.is_active)
 
         return False
 
