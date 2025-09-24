@@ -109,19 +109,127 @@ def to_camel_case(snake_str: str) -> str:
 
 
 def get_table_name(entity_name: str) -> str:
-    """Get table name with consistent pluralization logic
+    """Get table name with intelligent pluralization logic
 
     Args:
         entity_name: The entity name in snake_case
 
     Returns:
-        Pluralized table name
+        Pluralized table name using proper English grammar rules
     """
-    # Simple pluralization - handle entities already ending in 's'
-    if entity_name.endswith('s'):
-        return entity_name
-    else:
-        return f"{entity_name}s"
+    return get_plural_form(entity_name)
+
+
+def get_plural_form(word: str) -> str:
+    """Convert word to proper plural form using English grammar rules
+
+    Handles compound words (snake_case entities) by pluralizing only the last word.
+    Implements standard English pluralization rules for various word endings.
+
+    Args:
+        word: The singular form to pluralize
+
+    Returns:
+        The correct plural form
+
+    Raises:
+        ValueError: If word is empty or contains only underscores
+    """
+    # Handle edge cases
+    if not word:
+        raise ValueError("Cannot pluralize empty string")
+
+    if word == "_" or all(c == "_" for c in word):
+        raise ValueError("Cannot pluralize string containing only underscores")
+
+    # Handle compound words (snake_case entities)
+    if "_" in word:
+        parts = word.split("_")
+        if not parts[-1]:  # Handle cases like "word_"
+            raise ValueError("Invalid compound word ending with underscore")
+
+        # Pluralize only the last word
+        last_word_plural = _pluralize_single_word(parts[-1])
+        return "_".join(parts[:-1] + [last_word_plural])
+
+    # Handle single words
+    return _pluralize_single_word(word)
+
+
+def _pluralize_single_word(word: str) -> str:
+    """Pluralize a single word using English grammar rules
+
+    Args:
+        word: Single word to pluralize
+
+    Returns:
+        Pluralized form of the word
+    """
+    if not word:
+        return word
+
+    # Words already ending in 's', 'ss', 'x', 'z', 'sh', 'ch' - add 'es'
+    # But first check for words that are already plural or don't change
+    if word.endswith('s'):
+        # Handle special cases that are already plural or don't change
+        # Common words that end in 's' but are not plurals
+        singular_s_words = {
+            'status', 'series', 'news', 'species', 'means',
+            'headquarters', 'mathematics', 'physics', 'address',
+            'business', 'process', 'access', 'success', 'class'
+        }
+
+        # If it's a known singular word ending in 's', pluralize it
+        if word in singular_s_words:
+            if word in ['status', 'series', 'news', 'species', 'means', 'headquarters']:
+                return word  # These don't change in plural
+            else:
+                return f"{word}es"  # address -> addresses, class -> classes
+
+        # If already plural (ends with common plural patterns), don't change
+        if word.endswith(('ies', 'ves', 'ses', 'zes', 'shes', 'ches')):
+            return word
+
+        # For other words ending in 's', assume already plural
+        return word
+
+    # Words ending in 'y' preceded by a consonant -> change 'y' to 'ies'
+    if word.endswith('y') and len(word) > 1:
+        if word[-2] not in 'aeiou':  # Consonant before 'y'
+            return word[:-1] + 'ies'  # company -> companies
+        else:
+            return word + 's'  # boy -> boys
+
+    # Words ending in 'f' or 'fe' -> change to 'ves'
+    if word.endswith('f'):
+        # Some exceptions: chief -> chiefs, roof -> roofs
+        f_exceptions = {'chief', 'roof', 'proof', 'cliff', 'staff'}
+        if word in f_exceptions:
+            return word + 's'
+        else:
+            return word[:-1] + 'ves'  # leaf -> leaves
+
+    if word.endswith('fe'):
+        return word[:-2] + 'ves'  # knife -> knives
+
+    # Words ending in 's', 'ss', 'sh', 'ch', 'x', 'z' -> add 'es'
+    if word.endswith(('s', 'ss', 'sh', 'ch', 'x', 'z')):
+        return word + 'es'
+
+    # Words ending in 'o' preceded by a consonant -> usually add 'es'
+    if word.endswith('o') and len(word) > 1:
+        if word[-2] not in 'aeiou':  # Consonant before 'o'
+            # Some exceptions: photo -> photos, piano -> pianos
+            o_exceptions = {'photo', 'piano', 'halo', 'solo'}
+            if word in o_exceptions:
+                return word + 's'
+            else:
+                return word + 'es'  # hero -> heroes
+        else:
+            return word + 's'  # radio -> radios
+
+    # Regular plurals - just add 's'
+    return word + 's'
 
 
 def get_sqlalchemy_imports(fields: list[FieldDefinition]) -> set[str]:
@@ -1110,7 +1218,6 @@ async def handle_{entity_name}_updated(data: {entity_class}Response):
 async def handle_{entity_name}_deleted(data: dict):
     """Handle {entity_name} deleted events"""
     entity_id = data.get("entity_id")
-
     logger.info(f"{entity_class} deleted: {{entity_id}}")
 
 
@@ -1409,7 +1516,8 @@ def update_server_file(entity_name: str, dry_run: bool = False) -> None:
         content = content[:import_end] + router_import + '\n' + content[import_end:]
 
     # Add router to setup_routes function
-    router_line = f'    app.include_router({entity_name}_router, prefix="/api/v1/{entity_name}s")'
+    entity_plural = get_table_name(entity_name)
+    router_line = f'    app.include_router({entity_name}_router, prefix="/api/v1/{entity_plural}")'
 
     # Find setup_routes function and webhook router line
     webhook_router_line = 'app.include_router(webhook_router, prefix="/api/v1")'
@@ -1477,6 +1585,7 @@ def generate_migration_file(entity_name: str, fields: list[FieldDefinition], dry
     # Generate timestamp and revision ID
     from datetime import datetime
     import secrets
+    import subprocess
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     revision_id = secrets.token_hex(6)
@@ -1488,6 +1597,23 @@ def generate_migration_file(entity_name: str, fields: list[FieldDefinition], dry
     if dry_run:
         print(f"Would create migration: {migration_file}")
         return
+
+    # Get current head revision
+    current_head = None
+    try:
+        result = subprocess.run(
+            ["poetry", "run", "alembic", "current"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Extract revision ID from output like "86134d8125b5 (head)"
+        if result.stdout.strip():
+            current_head = result.stdout.strip().split()[0]
+    except subprocess.CalledProcessError:
+        print("⚠️  Could not get current head, creating initial migration")
+        current_head = None
 
     # Build column definitions
     column_defs = []
@@ -1524,7 +1650,7 @@ def generate_migration_file(entity_name: str, fields: list[FieldDefinition], dry
     migration_content = f'''"""{entity_class} table
 
 Revision ID: {revision_id}
-Revises:
+Revises: {current_head or ''}
 Create Date: {datetime.now().isoformat()}
 
 """
@@ -1534,7 +1660,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '{revision_id}'
-down_revision = None
+down_revision = {repr(current_head)}
 branch_labels = None
 depends_on = None
 

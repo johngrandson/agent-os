@@ -42,7 +42,7 @@ class AgentCache:
                 "No active agents found in database. At least one active agent is required "
                 "for the application."
             )
-            logger.info(msg)
+            logger.warning(msg)
 
         logger.info(f"Successfully loaded {len(self._agno_agents)} agents")
         return self._loaded_agents, self._agno_agents
@@ -84,7 +84,7 @@ def setup_agent_os_with_app(agno_agents: list[AgnoAgent], fastapi_app: FastAPI) 
     """Setup AgentOS with FastAPI app - direct and simple"""
     if not agno_agents:
         msg = "No agents loaded for AgentOS setup"
-        logger.info(msg)
+        logger.warning(msg)
 
     if len(agno_agents) == 0:
         agno_agents.append(
