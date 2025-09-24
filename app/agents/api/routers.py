@@ -130,12 +130,24 @@ async def update_agent(
         command = UpdateAgentCommand(
             agent_id=agent_id,
             name=request.name if request.name is not None else current_agent.name,
-            phone_number=request.phone_number if request.phone_number is not None else current_agent.phone_number,
-            description=request.description if request.description is not None else current_agent.description,
-            instructions=request.instructions if request.instructions is not None else current_agent.instructions,
-            is_active=request.is_active if request.is_active is not None else current_agent.is_active,
-            llm_model=request.llm_model if request.llm_model is not None else current_agent.llm_model,
-            default_language=request.default_language if request.default_language is not None else current_agent.default_language,
+            phone_number=request.phone_number
+            if request.phone_number is not None
+            else current_agent.phone_number,
+            description=request.description
+            if request.description is not None
+            else current_agent.description,
+            instructions=request.instructions
+            if request.instructions is not None
+            else current_agent.instructions,
+            is_active=request.is_active
+            if request.is_active is not None
+            else current_agent.is_active,
+            llm_model=request.llm_model
+            if request.llm_model is not None
+            else current_agent.llm_model,
+            default_language=request.default_language
+            if request.default_language is not None
+            else current_agent.default_language,
         )
 
         updated_agent = await agent_service.update_agent(command=command)

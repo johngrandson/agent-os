@@ -29,6 +29,7 @@ class UpdateAgentRequest(BaseModel):
     llm_model: str | None = Field(None, description="LLM model to use")
     default_language: str | None = Field("pt-BR", description="Default language for responses")
 
+
 # Related Entity Schemas
 class PromptResponse(BaseModel):
     """Prompt data response"""
@@ -113,4 +114,3 @@ class UpdateAgentCommand(BaseModel):
     is_active: bool
     llm_model: str | None = None
     default_language: str | None = "pt-BR"
-

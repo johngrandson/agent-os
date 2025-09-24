@@ -22,7 +22,6 @@ class Agent(Base, TimestampMixin):
     llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     default_language: Mapped[str | None] = mapped_column(String(10), nullable=True, default="pt-BR")
 
-
     @classmethod
     def create(
         cls,
