@@ -48,6 +48,12 @@ class Config(BaseSettings):
     WHATSAPP_HOOK_RETRIES_ATTEMPTS: int = 4
     WHATSAPP_HOOK_RETRIES_DELAY_SECONDS: int = 3
 
+    # Webhook Processing Timeouts (seconds)
+    AGENT_PROCESSING_TIMEOUT: int = 30
+    AGENT_GET_TIMEOUT: int = 5
+    AGENT_INIT_TIMEOUT: int = 10
+    WEBHOOK_MAX_RETRIES: int = 3
+
     # Redis Configuration
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379

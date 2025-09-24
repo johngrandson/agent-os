@@ -1,8 +1,8 @@
 """Agent event handlers"""
 
 import logging
-from typing import Any, Dict
 
+from app.agents.api.schemas import AgentResponse, CreateAgentResponse
 from app.events.core.registry import event_registry
 from faststream.redis import RedisRouter
 
@@ -14,33 +14,27 @@ agent_router = RedisRouter()
 
 
 @agent_router.subscriber("agent.created")
-async def handle_agent_created(data: Dict[str, Any]):
+async def handle_agent_created(data: CreateAgentResponse):
     """Handle agent created events"""
-    entity_id = data.get("entity_id")
-    event_data = data.get("data", {})
-
-    logger.info(f"Agent created: {entity_id}")
-    logger.debug(f"Agent data: {event_data}")
+    logger.info(f"Agent created: {data.id}")
+    logger.debug(f"Agent data: {data.model_dump()}")
 
     # Add any agent creation side effects here
     # e.g., send notifications, update caches, trigger workflows
 
 
 @agent_router.subscriber("agent.updated")
-async def handle_agent_updated(data: Dict[str, Any]):
+async def handle_agent_updated(data: AgentResponse):
     """Handle agent updated events"""
-    entity_id = data.get("entity_id")
-    event_data = data.get("data", {})
-
-    logger.info(f"Agent updated: {entity_id}")
-    logger.debug(f"Updated data: {event_data}")
+    logger.info(f"Agent updated: {data.id}")
+    logger.debug(f"Updated data: {data.model_dump()}")
 
     # Add any agent update side effects here
     # e.g., invalidate caches, update search index
 
 
 @agent_router.subscriber("agent.deleted")
-async def handle_agent_deleted(data: Dict[str, Any]):
+async def handle_agent_deleted(data: dict):
     """Handle agent deleted events"""
     entity_id = data.get("entity_id")
 
@@ -51,7 +45,7 @@ async def handle_agent_deleted(data: Dict[str, Any]):
 
 
 @agent_router.subscriber("agent.knowledge_created")
-async def handle_agent_knowledge_created(data: Dict[str, Any]):
+async def handle_agent_knowledge_created(data: dict):
     """Handle agent knowledge created events"""
     entity_id = data.get("entity_id")
     knowledge_data = data.get("data", {})

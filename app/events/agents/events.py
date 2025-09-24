@@ -1,9 +1,17 @@
 """Agent domain events"""
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, TypedDict
 
 from app.events.core.base import BaseEvent
+
+
+class AgentEventPayload(TypedDict):
+    """Type for agent event payloads received by handlers"""
+
+    entity_id: str
+    event_type: str
+    data: dict[str, Any]
 
 
 @dataclass

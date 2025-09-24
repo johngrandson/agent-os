@@ -6,10 +6,7 @@ from app.events.agents.publisher import AgentEventPublisher
 # Application imports
 from app.events.broker import broker
 from app.events.webhooks.publisher import WebhookEventPublisher
-from app.initialization.application_bootstrapper import ApplicationBootstrapper
-from app.initialization.services.agent_os_initializer import AgentOSInitializer
-from app.initialization.services.database_initializer import DatabaseInitializer
-from app.initialization.services.event_system_initializer import EventSystemInitializer
+from app.initialization import AgentLoader
 
 # Agno integration imports
 from app.integrations.agno import AgnoAgentConverter, AgnoKnowledgeAdapter, AgnoModelFactory
@@ -115,36 +112,18 @@ class Container(containers.DeclarativeContainer):
         event_publisher=agent_event_publisher,
     )
 
+    # Shared agent loader
+    agent_loader = providers.Singleton(
+        AgentLoader,
+        agent_repository=agent_repository,
+        agno_agent_converter=agno_agent_converter,
+    )
+
     # Webhook services
     webhook_agent_processor = providers.Factory(
         WebhookAgentProcessor,
-        agent_repository=agent_repository,
+        agent_loader=agent_loader,
         event_publisher=webhook_event_publisher,
-        agno_agent_converter=agno_agent_converter,
-    )
-
-    # Initialization services
-    database_initializer = providers.Factory(DatabaseInitializer)
-
-    event_system_initializer = providers.Factory(
-        EventSystemInitializer,
-        agent_service=agent_service,
-        event_publisher=agent_event_publisher,
-    )
-
-    agent_os_initializer = providers.Factory(
-        AgentOSInitializer,
-        agent_repository=agent_repository,
-        event_publisher=agent_event_publisher,
-        agno_agent_converter=agno_agent_converter,
-    )
-
-    application_bootstrapper = providers.Factory(
-        ApplicationBootstrapper,
-        database_initializer=database_initializer,
-        event_system_initializer=event_system_initializer,
-        agent_os_initializer=agent_os_initializer,
-        webhook_agent_processor=webhook_agent_processor,
     )
 
 

@@ -1,9 +1,17 @@
 """Webhook domain events"""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
 
 from app.events.core.base import BaseEvent
+
+
+class WebhookEventPayload(TypedDict):
+    """Type for webhook event payloads received by handlers"""
+
+    entity_id: str
+    event_type: str
+    data: dict[str, Any]
 
 
 @dataclass

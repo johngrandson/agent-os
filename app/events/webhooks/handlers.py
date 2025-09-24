@@ -1,29 +1,90 @@
 """Webhook event handlers"""
 
+import asyncio
 import logging
-from datetime import UTC
-from typing import Any
+from datetime import UTC, datetime
 
 from app.events.broker import broker
 from app.events.core.registry import event_registry
+from app.events.webhooks.events import WebhookEventPayload
+from app.events.webhooks.publisher import WebhookEventPublisher
 from app.webhook.api.schemas import WebhookData, WebhookPayload
+from core.config import config
 from faststream.redis import RedisRouter
 
 
 logger = logging.getLogger(__name__)
 
-# Create webhook-specific router
+# Create webhook-specific router and publisher
 webhook_router = RedisRouter()
+webhook_publisher = WebhookEventPublisher(broker=broker)
+
+
+async def _safe_reconstruct_webhook_data(webhook_data_dict: dict | None) -> WebhookData | None:
+    """Safely reconstruct WebhookData from dict with clear error handling"""
+    if not webhook_data_dict or not isinstance(webhook_data_dict, dict):
+        logger.error(f"Invalid webhook data dict: {type(webhook_data_dict)}")
+        return None
+
+    try:
+        return WebhookData(**webhook_data_dict)
+    except Exception as e:
+        logger.error(f"Failed to reconstruct WebhookData: {e}")
+        return None
+
+
+async def _setup_agent_processor(agent_id: str):
+    """Setup agent processor and get agent configuration"""
+    from app.container import Container
+    from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
+
+    container = Container()
+    agent_service = container.agent_service()
+
+    # Get agent with timeout
+    agent = await asyncio.wait_for(
+        agent_service.get_agent_by_id(agent_id), timeout=config.AGENT_GET_TIMEOUT
+    )
+
+    if not agent:
+        raise ValueError(f"Agent {agent_id} not found")
+
+    # Create processor
+    processor = WebhookAgentProcessor(
+        container.agent_repository(),
+        container.webhook_event_publisher(),
+        container.config,
+    )
+
+    # Initialize if needed
+    if not processor.has_agents():
+        await asyncio.wait_for(processor.initialize_agents(), timeout=config.AGENT_INIT_TIMEOUT)
+
+    return processor, agent
+
+
+async def _publish_ai_response(
+    session_id: str, agent_id: str, response: str, message_content: str, chat_id: str
+):
+    """Publish AI response generated event"""
+    await webhook_publisher.ai_response_generated(
+        session_id,
+        {
+            "agent_id": agent_id,
+            "response": response,
+            "original_message": message_content,
+            "chat_id": chat_id,
+            "processed_at": datetime.now(UTC).isoformat(),
+            "processing_duration": f"<{config.AGENT_PROCESSING_TIMEOUT}s",
+        },
+    )
 
 
 async def _publish_processing_failed(
     session_id: str, agent_id: str, error: str, webhook_data: WebhookData
 ):
     """Helper to publish processing failed events"""
-    from app.events.webhooks.publisher import WebhookEventPublisher
-
-    publisher = WebhookEventPublisher(broker=broker)
-    await publisher.processing_failed(
+    await webhook_publisher.processing_failed(
         session_id,
         {
             "agent_id": agent_id,
@@ -34,81 +95,32 @@ async def _publish_processing_failed(
 
 
 async def process_message_with_agent(session_id: str, webhook_data: WebhookData, agent_id: str):
-    """Process webhook message through AI agent with timeout and circuit breaker"""
-    import asyncio
-    from datetime import datetime
-
-    # Add timeout for agent processing
-    timeout_seconds = 30
-
+    """Process webhook message through AI agent - simplified orchestration"""
     try:
-        from app.container import Container
-
         logger.info(f"Processing message for agent {agent_id} in session {session_id}")
 
-        # Get message content using Pydantic model methods
+        # Validate input
         message_content = webhook_data.get_message_body()
-        chat_id = webhook_data.get_chat_id()
-
         if not message_content:
             logger.warning(f"Empty message content for session {session_id}")
             return
 
-        # Create container and get agent service
-        container = Container()
-        agent_service = container.agent_service()
+        chat_id = webhook_data.get_chat_id()
 
-        # Get agent configuration with timeout
-        agent = await asyncio.wait_for(agent_service.get_agent_by_id(agent_id), timeout=5.0)
-
-        if not agent:
-            logger.error(f"Agent {agent_id} not found")
-            await _publish_processing_failed(
-                session_id, agent_id, f"Agent {agent_id} not found", webhook_data
-            )
-            return
-
-        # Process message through agent
+        # Setup agent and processor
+        processor, agent = await _setup_agent_processor(agent_id)
         logger.info(f"Agent {agent.name} processing message: {message_content[:100]}...")
 
-        # Create agent processor
-        from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
-
-        processor = WebhookAgentProcessor(
-            container.agent_repository(),
-            container.webhook_event_publisher(),
-            container.config,
-        )
-
-        # Initialize agents if not already done (with timeout)
-        if not processor.has_agents():
-            await asyncio.wait_for(processor.initialize_agents(), timeout=10.0)
-
-        # Process and get response with timeout
-        logger.info(f"Starting AI processing (timeout: {timeout_seconds}s)...")
+        # Process message with timeout
+        logger.info(f"Starting AI processing (timeout: {config.AGENT_PROCESSING_TIMEOUT}s)...")
         response = await asyncio.wait_for(
             processor.process_message(agent_id, message_content, chat_id),
-            timeout=timeout_seconds,
+            timeout=config.AGENT_PROCESSING_TIMEOUT,
         )
 
+        # Handle response
         if response:
-            # Publish AI response generated event
-            from datetime import datetime
-
-            from app.events.webhooks.publisher import WebhookEventPublisher
-
-            publisher = WebhookEventPublisher(broker=broker)
-            await publisher.ai_response_generated(
-                session_id,
-                {
-                    "agent_id": agent_id,
-                    "response": response,
-                    "original_message": message_content,
-                    "chat_id": chat_id,
-                    "processed_at": datetime.now(UTC).isoformat(),
-                    "processing_duration": f"<{timeout_seconds}s",
-                },
-            )
+            await _publish_ai_response(session_id, agent_id, response, message_content, chat_id)
             logger.info(f"Successfully processed message for session {session_id}")
         else:
             logger.warning(f"Agent {agent_id} returned empty response for session {session_id}")
@@ -117,19 +129,22 @@ async def process_message_with_agent(session_id: str, webhook_data: WebhookData,
             )
 
     except TimeoutError:
-        error_msg = f"Agent processing timed out after {timeout_seconds}s"
+        error_msg = f"Agent processing timed out after {config.AGENT_PROCESSING_TIMEOUT}s"
         logger.error(f"Timeout error for session {session_id}: {error_msg}")
         await _publish_processing_failed(session_id, agent_id, error_msg, webhook_data)
+    except ValueError as e:  # Agent not found
+        logger.error(f"Agent error for session {session_id}: {e}")
+        await _publish_processing_failed(session_id, agent_id, str(e), webhook_data)
     except Exception as e:
         logger.error(f"Error processing message with agent: {e}")
         await _publish_processing_failed(session_id, agent_id, str(e), webhook_data)
 
 
 @webhook_router.subscriber("webhook.message_received")
-async def handle_message_received(data: dict[str, Any]):
+async def handle_message_received(data: WebhookEventPayload):
     """Handle webhook message received events - orchestrates message processing"""
-    session_id = data.get("entity_id")
-    message_data = data.get("data", {})
+    session_id = data["entity_id"]
+    message_data = data["data"]
 
     logger.info(f"Webhook message received for session: {session_id}")
     logger.debug(f"Message data: {message_data}")
@@ -142,7 +157,9 @@ async def handle_message_received(data: dict[str, Any]):
             return
 
         # Reconstruct WebhookData from dict
-        webhook_data = WebhookData(**webhook_data_dict)
+        webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
+        if not webhook_data:
+            return
 
         # Get agent ID using Pydantic model method
         agent_id = webhook_data.get_agent_id()
@@ -173,10 +190,10 @@ async def handle_message_received(data: dict[str, Any]):
 
 
 @webhook_router.subscriber("webhook.message_processed")
-async def handle_message_processed(data: dict[str, Any]):
+async def handle_message_processed(data: WebhookEventPayload):
     """Handle webhook message processed events"""
-    session_id = data.get("entity_id")
-    processing_data = data.get("data", {})
+    session_id = data["entity_id"]
+    processing_data = data["data"]
 
     logger.info(f"Webhook message processed for session: {session_id}")
     logger.debug(f"Processing result: {processing_data}")
@@ -186,10 +203,10 @@ async def handle_message_processed(data: dict[str, Any]):
 
 
 @webhook_router.subscriber("webhook.session_status_changed")
-async def handle_session_status_changed(data: dict[str, Any]):
+async def handle_session_status_changed(data: WebhookEventPayload):
     """Handle webhook session status changed events"""
-    session_id = data.get("entity_id")
-    status_data = data.get("data", {})
+    session_id = data["entity_id"]
+    status_data = data["data"]
 
     logger.info(f"Session status changed for: {session_id}")
     logger.debug(f"Status data: {status_data}")
@@ -198,11 +215,49 @@ async def handle_session_status_changed(data: dict[str, Any]):
     # e.g., update session store, notify administrators
 
 
+async def _attempt_message_retry(session_id: str, webhook_data_dict: dict, agent_id: str) -> bool:
+    """Attempt to retry message processing. Returns True if successful."""
+    try:
+        # Reconstruct WebhookData for retry
+        webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
+        if not webhook_data:
+            logger.error(f"Cannot reconstruct webhook data for retry in session {session_id}")
+            return False
+
+        await process_message_with_agent(session_id, webhook_data, agent_id)
+        return True
+
+    except Exception as retry_error:
+        logger.error(f"Retry failed for session {session_id}: {retry_error}")
+
+        # Report retry failure
+        failed_webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
+        if failed_webhook_data:
+            await _publish_processing_failed(
+                session_id,
+                agent_id,
+                f"Retry failed: {retry_error}",
+                failed_webhook_data,
+            )
+        return False
+
+
+async def _handle_max_retries_reached(session_id: str, agent_id: str, error_message: str):
+    """Handle case when max retries have been reached"""
+    logger.error(
+        f"Max retries ({config.WEBHOOK_MAX_RETRIES}) reached for session {session_id}. Moving to dead letter queue."
+    )
+    logger.critical(
+        f"DEAD LETTER: Failed to process message after {config.WEBHOOK_MAX_RETRIES} retries"
+    )
+    logger.critical(f"Session: {session_id}, Agent: {agent_id}, Error: {error_message}")
+
+
 @webhook_router.subscriber("webhook.processing_failed")
-async def handle_processing_failed(data: dict[str, Any]):
-    """Handle webhook processing failed events with retry logic"""
-    session_id = data.get("entity_id")
-    error_data = data.get("data", {})
+async def handle_processing_failed(data: WebhookEventPayload):
+    """Handle webhook processing failed events with simplified retry logic"""
+    session_id = data["entity_id"]
+    error_data = data["data"]
 
     logger.error(f"Webhook processing failed for session: {session_id}")
     logger.error(f"Error details: {error_data}")
@@ -210,75 +265,27 @@ async def handle_processing_failed(data: dict[str, Any]):
     agent_id = error_data.get("agent_id", "unknown")
     error_message = error_data.get("error", "Unknown error")
     webhook_data_dict = error_data.get("webhook_data", {})
-
-    # Implement retry logic
     retry_count = error_data.get("retry_count", 0)
-    max_retries = 3
 
-    if retry_count < max_retries:
-        # Exponential backoff: wait 2^retry_count seconds
-        import asyncio
-
+    if retry_count < config.WEBHOOK_MAX_RETRIES:
+        # Exponential backoff
         retry_delay = 2**retry_count
-
         logger.info(
-            f"Scheduling retry {retry_count + 1}/{max_retries} for session {session_id} "
+            f"Scheduling retry {retry_count + 1}/{config.WEBHOOK_MAX_RETRIES} for session {session_id} "
             f"in {retry_delay}s"
         )
 
         await asyncio.sleep(retry_delay)
-
-        # Retry the message processing
-        try:
-            # Reconstruct WebhookData for retry
-            if isinstance(webhook_data_dict, dict):
-                webhook_data = WebhookData(**webhook_data_dict)
-            else:
-                # Fallback - webhook_data_dict might already be serialized
-                logger.warning(f"Webhook data is not a dict: {type(webhook_data_dict)}")
-                return
-
-            await process_message_with_agent(session_id, webhook_data, agent_id)
-
-        except Exception as retry_error:
-            logger.error(f"Retry {retry_count + 1} failed for session {session_id}: {retry_error}")
-
-            # Create WebhookData for failed retry reporting
-            try:
-                failed_webhook_data = (
-                    WebhookData(**webhook_data_dict)
-                    if isinstance(webhook_data_dict, dict)
-                    else None
-                )
-                if failed_webhook_data:
-                    await _publish_processing_failed(
-                        session_id,
-                        agent_id,
-                        f"Retry {retry_count + 1} failed: {retry_error}",
-                        failed_webhook_data,
-                    )
-            except Exception as nested_error:
-                logger.error(f"Failed to publish retry failure: {nested_error}")
+        await _attempt_message_retry(session_id, webhook_data_dict, agent_id)
     else:
-        # Max retries reached - send to dead letter queue
-        logger.error(
-            f"Max retries ({max_retries}) reached for session {session_id}. "
-            f"Moving to dead letter queue."
-        )
-
-        # Log final failure and prepare for dead letter queue implementation
-        logger.critical(f"DEAD LETTER: Failed to process message after {max_retries} retries")
-        logger.critical(f"Session: {session_id}, Agent: {agent_id}, Error: {error_message}")
-
-        # Optionally, send a generic error response to user
-        # await _send_error_response_to_user(session_id, webhook_data)
+        await _handle_max_retries_reached(session_id, agent_id, error_message)
 
 
 @webhook_router.subscriber("webhook.ai_response_generated")
-async def handle_ai_response_generated(data: dict[str, Any]):
+async def handle_ai_response_generated(data: WebhookEventPayload):
     """Handle AI response generated events - send response back to user"""
-    session_id = data.get("entity_id")
-    response_data = data.get("data", {})
+    session_id = data["entity_id"]
+    response_data = data["data"]
 
     logger.info(f"AI response generated for session: {session_id}")
     logger.debug(f"Response data: {response_data}")
@@ -295,17 +302,11 @@ async def handle_ai_response_generated(data: dict[str, Any]):
         logger.info(f"Sending response to chat {chat_id}: {response_text[:100]}...")
 
         # Send response via WhatsApp API
-        from datetime import datetime
-
         # Simulate message sending until WAHA API client is implemented
         logger.info(f"📱 Would send to {chat_id}: {response_text}")
 
         # Publish response sent event
-        from app.events.webhooks.publisher import WebhookEventPublisher
-
-        publisher = WebhookEventPublisher(broker=broker)
-
-        await publisher.response_sent(
+        await webhook_publisher.response_sent(
             session_id,
             {
                 "agent_id": agent_id,
@@ -322,10 +323,10 @@ async def handle_ai_response_generated(data: dict[str, Any]):
 
 
 @webhook_router.subscriber("webhook.response_sent")
-async def handle_response_sent(data: dict[str, Any]):
+async def handle_response_sent(data: WebhookEventPayload):
     """Handle response sent events"""
-    session_id = data.get("entity_id")
-    sent_data = data.get("data", {})
+    session_id = data["entity_id"]
+    sent_data = data["data"]
 
     logger.info(f"Response sent for session: {session_id}")
     logger.debug(f"Sent data: {sent_data}")

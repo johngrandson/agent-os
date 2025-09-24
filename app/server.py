@@ -3,6 +3,7 @@ import logging
 from app.agents.api.routers import agent_router
 from app.container import Container
 from app.events import setup_broker_with_handlers
+from app.initialization import initialize_database, setup_agent_os_with_app
 from app.webhook.api.routers import webhook_router
 from core.config import config
 from core.exceptions import CustomException
@@ -86,7 +87,9 @@ def create_app() -> FastAPI:
     # Setup event broker with all registered handlers
     setup_broker_with_handlers()
 
-    bootstrapper = container.application_bootstrapper()
+    # Get shared agent loader from container
+    agent_loader = container.agent_loader()
+    webhook_processor = container.webhook_agent_processor()
 
     # Create FastAPI app
     app = FastAPI(
@@ -104,11 +107,16 @@ def create_app() -> FastAPI:
     # Setup startup event
     @app.on_event("startup")
     async def initialize_on_startup():
-        await bootstrapper.initialize_database()
-        await bootstrapper.initialize_event_system()
+        # Initialize database (simple function call)
+        await initialize_database()
 
+        # Load agents for both AgentOS and webhook processing
+        await agent_loader.load_all_active_agents()
+        await webhook_processor.initialize_agents()
+
+        # Setup AgentOS with loaded agents
         nonlocal app
-        app = bootstrapper.setup_agent_os(app)
+        app = setup_agent_os_with_app(agent_loader.agno_agents, app)
 
     return app
 
