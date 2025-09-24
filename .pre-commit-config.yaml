@@ -3,11 +3,8 @@ repos:
     rev: v0.9.5
     hooks:
       - id: ruff
-        name: ruff (lint all)
-        args: []
-      - id: ruff
-        name: ruff (lint + fix imports)
-        args: ["--fix", "--select", "I"]
+        name: ruff (lint + fix all)
+        args: ["--fix"]
       - id: ruff-format
         name: ruff-format
 

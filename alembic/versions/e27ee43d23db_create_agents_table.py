@@ -6,17 +6,17 @@ Create Date: 2025-09-24 15:03:55.684603
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 # revision identifiers, used by Alembic.
 revision: str = "e27ee43d23db"
-down_revision: Union[str, None] = "729532316381"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "729532316381"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -57,8 +57,8 @@ def upgrade() -> None:
     """)
 
     op.execute("""
-        CREATE TRIGGER update_agents_updated_at 
-        BEFORE UPDATE ON agents 
+        CREATE TRIGGER update_agents_updated_at
+        BEFORE UPDATE ON agents
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     """)
 
