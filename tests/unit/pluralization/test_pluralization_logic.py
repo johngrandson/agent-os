@@ -107,6 +107,8 @@ class TestPluralizationIntegration:
             ("user_profile", "user_profiles"),
             ("order_item", "order_items"),
             ("payment_method", "payment_methods"),
+            ("user_functionality", "user_functionalities"),
+            ("process", "processes"),
         ]
 
         for entity_name, expected_plural in test_cases:
