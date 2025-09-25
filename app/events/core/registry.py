@@ -28,9 +28,13 @@ class EventRegistry:
             raise ValueError(msg)
         return self._routers[domain]
 
-    def get_all_routers(self) -> list[RedisRouter]:
-        """Get all registered routers"""
-        return list(self._routers.values())
+    def get_router(self, domain: str) -> RedisRouter:
+        """Get router for a specific domain (alias for get_domain_router)"""
+        return self.get_domain_router(domain)
+
+    def get_all_routers(self) -> dict[str, RedisRouter]:
+        """Get all registered routers as a dictionary"""
+        return self._routers.copy()
 
     def register_handler(self, channel: str, handler: Callable) -> None:
         """Register a handler for a specific channel"""

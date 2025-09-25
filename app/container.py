@@ -1,10 +1,13 @@
 import redis.asyncio as redis
 from app.agents.repositories.agent_repository import AgentRepository
 from app.agents.services.agent_service import AgentService
+from app.agents.services.orchestration_service import OrchestrationService
 from app.events.agents.publisher import AgentEventPublisher
 
 # Application imports
 from app.events.broker import broker
+from app.events.orchestration.publisher import OrchestrationEventPublisher
+from app.events.orchestration.task_registry import TaskRegistry
 from app.events.webhooks.publisher import WebhookEventPublisher
 from app.initialization import AgentCache
 
@@ -83,6 +86,11 @@ class Container(containers.DeclarativeContainer):
         broker=broker,
     )
 
+    orchestration_event_publisher = providers.Singleton(
+        OrchestrationEventPublisher,
+        broker=broker,
+    )
+
     # OpenAI client
     openai_client = providers.Singleton(AsyncOpenAI)
 
@@ -107,11 +115,20 @@ class Container(containers.DeclarativeContainer):
     # Repositories
     agent_repository = providers.Factory(AgentRepository)
 
+    # Orchestration components
+    task_registry = providers.Singleton(TaskRegistry)
+
     # Services
     agent_service = providers.Singleton(
         AgentService,
         repository=agent_repository,
         event_publisher=agent_event_publisher,
+    )
+
+    orchestration_service = providers.Singleton(
+        OrchestrationService,
+        task_registry=task_registry,
+        event_publisher=orchestration_event_publisher,
     )
 
     # Agent cache for simple storage and lookup

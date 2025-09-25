@@ -50,8 +50,6 @@ async def _setup_agent_processor(agent_id: str):
         msg = f"Agent {agent_id} not found"
         raise ValueError(msg)
 
-    print(f"#################### Agent found: {container}")
-
     # Create processor
     processor = WebhookAgentProcessor(
         container.agent_cache(),

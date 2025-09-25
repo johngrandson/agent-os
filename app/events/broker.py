@@ -18,7 +18,7 @@ app = FastStream(broker)
 def setup_broker_with_handlers():
     """Setup broker with all registered domain handlers"""
     # Include all registered routers in the broker
-    for router in event_registry.get_all_routers():
+    for router in event_registry.get_all_routers().values():
         broker.include_router(router)
 
     return broker

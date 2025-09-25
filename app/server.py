@@ -1,5 +1,6 @@
 import logging
 
+from app.agents.api.orchestration_routers import orchestration_router
 from app.agents.api.routers import agent_router
 from app.container import Container
 from app.events import setup_broker_with_handlers
@@ -70,6 +71,7 @@ def setup_routes(app: FastAPI):
         }
 
     app.include_router(agent_router, prefix="/api/v1/agents")
+    app.include_router(orchestration_router, prefix="/api/v1/orchestration")
     app.include_router(webhook_router, prefix="/api/v1")
 
 
@@ -78,6 +80,7 @@ def setup_dependency_injection(container: Container):
     container.wire(
         modules=[
             "app.agents.api.routers",
+            "app.agents.api.orchestration_routers",
             "app.webhook.api.routers",
         ]
     )
