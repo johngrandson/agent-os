@@ -11,11 +11,11 @@ from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import ResponseLogMiddleware, SQLAlchemyMiddleware
 from core.logging_config import configure_logging
 from dotenv import load_dotenv
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from fastapi import Depends, FastAPI, Request
 
 
 # Load environment variables
@@ -62,7 +62,12 @@ def setup_routes(app: FastAPI):
     @app.get("/api/v1/health")
     async def health_check():
         """Basic health check endpoint"""
-        return {"status": "healthy", "service": "agent-os"}
+        return {
+            "status": "healthy",
+            "service": "agent-os",
+            "version": "1.0.0",
+            "environment": config.ENV,
+        }
 
     app.include_router(agent_router, prefix="/api/v1/agents")
     app.include_router(webhook_router, prefix="/api/v1")

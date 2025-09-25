@@ -17,6 +17,7 @@ from core.config import get_config
 from dependency_injector import containers, providers
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import QueuePool
 
 
 class Container(containers.DeclarativeContainer):
@@ -32,15 +33,20 @@ class Container(containers.DeclarativeContainer):
     writer_engine = providers.Singleton(
         create_async_engine,
         config_object.provided.WRITER_DB_URL,
-        pool_recycle=3600,
+        pool_recycle=3600,  # Recycle connections after 1 hour
         echo=config_object.provided.DEBUG,
+        poolclass=QueuePool,
     )
 
     reader_engine = providers.Singleton(
         create_async_engine,
         config_object.provided.READER_DB_URL,
-        pool_recycle=3600,
+        pool_recycle=3600,  # Recycle connections after 1 hour
+        pool_size=20,  # Number of connections to keep in the pool
+        pool_pre_ping=True,  # Test connections before using them
+        max_overflow=30,  # Additional connections when needed
         echo=config_object.provided.DEBUG,
+        poolclass=QueuePool,
     )
 
     # Session factories

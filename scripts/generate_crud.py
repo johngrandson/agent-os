@@ -1630,17 +1630,20 @@ def generate_migration_file(entity_name: str, fields: list[FieldDefinition], dry
             if "import uuid" not in import_lines:
                 import_lines.append("import uuid")
 
-        column_def = f"    sa.Column('{field.name}', {col_type}, nullable={nullable})"
+        # Build column definition with default value inside the Column() call
+        default_part = ""
         if field.default:
             if field.type_ in ["str", "text"]:
-                column_def += f", default='{field.default}'"
+                default_part = f", default='{field.default}'"
             elif field.type_ == "bool":
-                column_def += f", default={field.default}"
+                default_part = f", default={field.default}"
             elif field.type_ in ["int", "float"]:
-                column_def += f", default={field.default}"
+                default_part = f", default={field.default}"
             elif field.type_ == "uuid":
                 if field.default == "uuid4":
-                    column_def += f", default=uuid.uuid4"
+                    default_part = f", default=uuid.uuid4"
+
+        column_def = f"    sa.Column('{field.name}', {col_type}, nullable={nullable}{default_part})"
 
         column_defs.append(column_def)
 

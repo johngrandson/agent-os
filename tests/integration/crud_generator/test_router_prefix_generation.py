@@ -82,7 +82,9 @@ def setup_dependency_injection(container: Container):
         for entity_name, expected_plural in test_cases:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
-                server_file = temp_path / "server.py"
+                # Create the 'app' directory inside the temporary directory
+                (temp_path / "app").mkdir(parents=True, exist_ok=True)
+                server_file = temp_path / "app" / "server.py"
                 server_file.write_text(mock_server_content)
 
                 # Mock the project root to use our temp directory

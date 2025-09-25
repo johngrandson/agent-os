@@ -5,7 +5,7 @@ import uuid
 from infrastructure.database import Base
 from infrastructure.database.mixins import TimestampMixin
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, Index, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,6 +21,10 @@ class Agent(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=False)
     llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     default_language: Mapped[str | None] = mapped_column(String(10), nullable=True, default="pt-BR")
+
+    __table_args__ = (
+        Index("idx_phone_number_created_at", "phone_number", "created_at", unique=True),
+    )
 
     @classmethod
     def create(
