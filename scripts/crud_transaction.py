@@ -388,7 +388,8 @@ class CRUDTransaction:
             logger.debug(f"Cleaned up backup directory: {self.backup_dir}")
 
     def _get_current_migration_head(self) -> Optional[str]:
-        """Get current Alembic migration head"""
+        """Get current Alembic migration head with fallback strategies"""
+        # Strategy 1: Try alembic current
         try:
             result = subprocess.run(
                 ["poetry", "run", "alembic", "current"],
@@ -401,12 +402,88 @@ class CRUDTransaction:
 
             # Extract revision ID from output like "86134d8125b5 (head)"
             if result.stdout.strip():
-                return result.stdout.strip().split()[0]
-            return None
+                first_line = result.stdout.strip().split('\n')[0]
+                return first_line.split()[0]
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, IndexError) as e:
-            logger.warning(f"Could not get current migration head: {e}")
-            return None
+            logger.warning(f"Could not get current migration head via 'alembic current': {e}")
+
+        # Strategy 2: Try alembic heads as fallback
+        try:
+            result = subprocess.run(
+                ["poetry", "run", "alembic", "heads"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30
+            )
+
+            # Extract revision ID from output like "86134d8125b5 (head)"
+            if result.stdout.strip():
+                first_line = result.stdout.strip().split('\n')[0]
+                head_revision = first_line.split()[0]
+                logger.info(f"Using heads as fallback, found: {head_revision}")
+                return head_revision
+
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, IndexError) as e:
+            logger.warning(f"Could not get migration head via 'alembic heads': {e}")
+
+        # Strategy 3: Try to fix orphaned version in database
+        try:
+            self._fix_orphaned_migration_version()
+            # Retry alembic current after fix
+            result = subprocess.run(
+                ["poetry", "run", "alembic", "current"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30
+            )
+            if result.stdout.strip():
+                first_line = result.stdout.strip().split('\n')[0]
+                fixed_revision = first_line.split()[0]
+                logger.info(f"Fixed orphaned migration, current head: {fixed_revision}")
+                return fixed_revision
+        except Exception as e:
+            logger.warning(f"Could not fix orphaned migration: {e}")
+
+        # Strategy 4: Return None if all strategies fail
+        logger.warning("Could not determine current migration head, proceeding without migration rollback support")
+        return None
+
+    def _fix_orphaned_migration_version(self) -> None:
+        """Fix orphaned migration version in database by updating to latest available head"""
+        try:
+            # Get available heads from files
+            result = subprocess.run(
+                ["poetry", "run", "alembic", "heads"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30
+            )
+
+            if result.stdout.strip():
+                available_head = result.stdout.strip().split('\n')[0].split()[0]
+                logger.info(f"Attempting to fix orphaned migration to: {available_head}")
+
+                # Use alembic stamp to fix the version
+                subprocess.run(
+                    ["poetry", "run", "alembic", "stamp", available_head],
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=30
+                )
+                logger.info(f"Successfully stamped migration to: {available_head}")
+
+        except Exception as e:
+            logger.warning(f"Failed to fix orphaned migration: {e}")
+            raise
 
     def _generate_migration_file(self) -> Path:
         """Generate Alembic migration file for the entity"""
@@ -489,8 +566,9 @@ def downgrade() -> None:
         return migration_path
 
     def _execute_alembic_upgrade(self) -> None:
-        """Execute Alembic upgrade to head"""
+        """Execute Alembic upgrade to head with multiple heads handling"""
         try:
+            # First attempt: upgrade to head
             result = subprocess.run(
                 ["poetry", "run", "alembic", "upgrade", "head"],
                 cwd=self.project_root,
@@ -504,9 +582,42 @@ def downgrade() -> None:
                 logger.debug(f"Alembic output: {result.stdout.strip()}")
 
         except subprocess.CalledProcessError as e:
-            error_msg = f"Alembic upgrade failed: {e.stderr if e.stderr else str(e)}"
+            # Check if it's a multiple heads error
+            error_output = e.stderr if e.stderr else str(e)
+            if "Multiple head revisions are present" in error_output:
+                logger.warning("Multiple heads detected, attempting to merge...")
+                try:
+                    # Try to merge heads automatically
+                    merge_result = subprocess.run(
+                        ["poetry", "run", "alembic", "merge", "heads", "-m", f"merge heads for {self.entity_name}"],
+                        cwd=self.project_root,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                        timeout=60
+                    )
+                    logger.info("Successfully merged heads")
+
+                    # Try upgrade again after merge
+                    result = subprocess.run(
+                        ["poetry", "run", "alembic", "upgrade", "head"],
+                        cwd=self.project_root,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                        timeout=60
+                    )
+                    logger.info("Successfully upgraded after merge")
+                    return
+
+                except subprocess.CalledProcessError as merge_error:
+                    logger.error(f"Failed to merge heads: {merge_error}")
+
+            # If not multiple heads error or merge failed, re-raise original error
+            error_msg = f"Alembic upgrade failed: {error_output}"
             logger.error(error_msg)
             raise CRUDGenerationError(error_msg) from e
+
         except subprocess.TimeoutExpired as e:
             error_msg = "Alembic upgrade timed out after 60 seconds"
             logger.error(error_msg)
