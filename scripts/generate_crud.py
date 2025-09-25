@@ -1740,6 +1740,123 @@ def run_migration(entity_name: str, dry_run: bool = False) -> None:
         raise ValidationError(f"Failed to run migration: {e.stderr}")
 
 
+def generate_crud_with_transaction(entity_name: str, fields: list[FieldDefinition], force: bool = False) -> None:
+    """Generate CRUD with transaction rollback support
+
+    Args:
+        entity_name: The entity name
+        fields: List of field definitions
+        force: Whether to overwrite existing files
+
+    Raises:
+        CRUDGenerationError: If generation fails
+    """
+    try:
+        # Import here to avoid circular imports
+        from crud_transaction import CRUDTransaction
+
+        with CRUDTransaction(entity_name, fields) as transaction:
+            print(f"🚀 Generating CRUD for entity: {entity_name} (with rollback support)")
+
+            # Stage 1: Create directory structure
+            print("\n📁 Creating directory structure...")
+            directories = get_directory_structure(entity_name)
+            for directory in directories:
+                transaction.create_directory(directory)
+
+            # Create __init__.py files
+            project_root = Path(__file__).parent.parent
+            init_files = [
+                project_root / "app" / entity_name / "__init__.py",
+                project_root / "app" / entity_name / "api" / "__init__.py",
+                project_root / "app" / entity_name / "repositories" / "__init__.py",
+                project_root / "app" / entity_name / "services" / "__init__.py",
+                project_root / "app" / "events" / entity_name / "__init__.py",
+            ]
+
+            for init_file in init_files:
+                transaction.create_file(init_file, "")
+
+            # Stage 2: Generate all CRUD files
+            print(f"\n📄 Stage 2: Generating CRUD + Event files...")
+
+            # Generate all files using transaction
+            files_to_generate = {
+                # Model file
+                project_root / "app" / entity_name / f"{entity_name}.py":
+                    generate_model_file(entity_name, fields),
+
+                # Repository file
+                project_root / "app" / entity_name / "repositories" / f"{entity_name}_repository.py":
+                    generate_repository_file(entity_name, fields),
+
+                # Service file
+                project_root / "app" / entity_name / "services" / f"{entity_name}_service.py":
+                    generate_service_file(entity_name, fields),
+
+                # API files
+                project_root / "app" / entity_name / "api" / "routers.py":
+                    generate_router_file(entity_name, fields),
+
+                project_root / "app" / entity_name / "api" / "schemas.py":
+                    generate_schemas_file(entity_name, fields),
+
+                # Event files
+                project_root / "app" / "events" / entity_name / "events.py":
+                    generate_event_events_file(entity_name, fields),
+
+                project_root / "app" / "events" / entity_name / "publisher.py":
+                    generate_event_publisher_file(entity_name, fields),
+
+                project_root / "app" / "events" / entity_name / "handlers.py":
+                    generate_event_handlers_file(entity_name, fields),
+            }
+
+            # Create all files using transaction
+            for file_path, content in files_to_generate.items():
+                transaction.create_file(file_path, content)
+
+            print(f"✅ Stage 2 complete: Generated {len(files_to_generate)} files")
+
+            # Stage 3: System integration
+            print(f"\n🔧 Stage 3: Integrating {entity_name} with container and server...")
+
+            # Update domain exceptions
+            transaction.modify_file_content(
+                Path("core/exceptions/domain.py"),
+                lambda content: _add_domain_exceptions_to_content(content, entity_name)
+            )
+
+            # Update container.py
+            transaction.modify_file_content(
+                Path("app/container.py"),
+                lambda content: _update_container_content(content, entity_name)
+            )
+
+            # Update server.py
+            transaction.modify_file_content(
+                Path("app/server.py"),
+                lambda content: _update_server_content(content, entity_name)
+            )
+
+            print(f"✅ Stage 3 complete: {entity_name} integrated with system")
+
+            # Stage 4: Database migration
+            print(f"\n🚀 Stage 4: Generating database migration for {entity_name}...")
+            transaction.run_database_migration()
+            print(f"✅ Stage 4 complete: Database migration for {entity_name}")
+
+            # If we get here, everything succeeded
+            transaction.commit()
+            print(f"\n🎉 Successfully generated CRUD for {entity_name} with rollback support!")
+            print("🔧 Next: Test generation (Stage 5)")
+
+    except Exception as e:
+        print(f"❌ CRUD generation failed: {e}")
+        print("🔄 All changes have been automatically rolled back")
+        raise
+
+
 def run_stage_4(entity_name: str, fields: list[FieldDefinition], dry_run: bool = False) -> None:
     """Stage 4: Generate and run database migration
 
@@ -1766,6 +1883,148 @@ def run_stage_4(entity_name: str, fields: list[FieldDefinition], dry_run: bool =
         print(f"✅ Stage 4 dry-run complete: Would generate and run migration for {entity_name}")
 
 
+def _add_domain_exceptions_to_content(content: str, entity_name: str) -> str:
+    """Add domain exceptions to the domain.py content"""
+    entity_class = to_pascal_case(entity_name)
+
+    # Check if exceptions already exist
+    if f"class {entity_class}Exception" in content:
+        return content  # Already exists, no changes needed
+
+    # Generate exception classes
+    exception_content = f'''
+
+class {entity_class}Exception(DomainException):
+    """{entity_class}-related exceptions"""
+
+
+class {entity_class}NotFound({entity_class}Exception):
+    code = 404
+    error_code = "{entity_name.upper()}_NOT_FOUND"
+    message = "{entity_class} not found"
+
+
+class {entity_class}AlreadyExists({entity_class}Exception):
+    code = 409
+    error_code = "{entity_name.upper()}_ALREADY_EXISTS"
+    message = "{entity_class} already exists"
+'''
+
+    # Append to end of file
+    return content + exception_content
+
+
+def _update_container_content(content: str, entity_name: str) -> str:
+    """Update container.py content to add providers"""
+    entity_class = to_pascal_case(entity_name)
+
+    # Check if entity already integrated
+    if f"{entity_name}_repository" in content:
+        return content  # Already integrated, no changes needed
+
+    # Add imports section
+    import_lines = f"""from app.{entity_name}.repositories.{entity_name}_repository import {entity_class}Repository
+from app.{entity_name}.services.{entity_name}_service import {entity_class}Service
+from app.events.{entity_name}.publisher import {entity_class}EventPublisher"""
+
+    # Find import insertion point (after existing agent imports)
+    agent_import_line = "from app.agents.services.agent_service import AgentService"
+    import_insertion_point = content.find(agent_import_line)
+
+    if import_insertion_point == -1:
+        raise ValueError("Could not find import insertion point in container.py")
+
+    # Insert imports after AgentService import
+    import_end = content.find('\n', import_insertion_point) + 1
+    content = content[:import_end] + import_lines + '\n' + content[import_end:]
+
+    # Add event publisher (after existing event publishers)
+    event_publisher_code = f'''
+    {entity_name}_event_publisher = providers.Singleton(
+        {entity_class}EventPublisher,
+        broker=broker,
+    )
+'''
+
+    # Find event publisher insertion point
+    webhook_publisher = "webhook_event_publisher = providers.Singleton("
+    publisher_insertion_point = content.find(webhook_publisher)
+
+    if publisher_insertion_point != -1:
+        # Find the end of webhook_event_publisher block
+        publisher_end = content.find(')', publisher_insertion_point)
+        publisher_end = content.find('\n', publisher_end) + 1
+        content = content[:publisher_end] + event_publisher_code + content[publisher_end:]
+
+    # Add repository and service providers (after existing ones)
+    providers_code = f'''
+    # {entity_class} providers
+    {entity_name}_repository = providers.Factory({entity_class}Repository)
+
+    {entity_name}_service = providers.Singleton(
+        {entity_class}Service,
+        repository={entity_name}_repository,
+        event_publisher={entity_name}_event_publisher,
+    )
+'''
+
+    # Find service insertion point (after agent_service)
+    agent_service_line = "agent_service = providers.Singleton("
+    service_insertion_point = content.find(agent_service_line)
+
+    if service_insertion_point != -1:
+        # Find the end of agent_service block
+        service_end = content.find(')', service_insertion_point)
+        service_end = content.find('\n', service_end) + 1
+        content = content[:service_end] + providers_code + content[service_end:]
+
+    return content
+
+
+def _update_server_content(content: str, entity_name: str) -> str:
+    """Update server.py content to include new router"""
+    # Check if router already added
+    if f"{entity_name}_router" in content:
+        return content  # Already added, no changes needed
+
+    # Add router import
+    router_import = f"from app.{entity_name}.api.routers import {entity_name}_router"
+
+    # Find import insertion point (after webhook_router import)
+    webhook_import = "from app.webhook.api.routers import webhook_router"
+    import_insertion_point = content.find(webhook_import)
+
+    if import_insertion_point != -1:
+        import_end = content.find('\n', import_insertion_point) + 1
+        content = content[:import_end] + router_import + '\n' + content[import_end:]
+
+    # Add router to setup_routes function
+    entity_plural = get_table_name(entity_name)
+    router_line = f'    app.include_router({entity_name}_router, prefix="/api/v1/{entity_plural}")'
+
+    # Find setup_routes function and webhook router line
+    webhook_router_line = 'app.include_router(webhook_router, prefix="/api/v1")'
+    router_insertion_point = content.find(webhook_router_line)
+
+    if router_insertion_point != -1:
+        router_end = content.find('\n', router_insertion_point) + 1
+        content = content[:router_end] + router_line + '\n' + content[router_end:]
+
+    # Add module to container wiring
+    wiring_module = f'"app.{entity_name}.api.routers",'
+
+    # Find container.wire section
+    webhook_module = '"app.webhook.api.routers",'
+    webhook_insertion_point = content.find(webhook_module)
+
+    if webhook_insertion_point != -1:
+        webhook_end = content.find('\n', webhook_insertion_point) + 1
+        # Insert before the closing bracket, maintaining indentation
+        content = content[:webhook_end] + f"            {wiring_module}\n" + content[webhook_end:]
+
+    return content
+
+
 def main() -> None:
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
@@ -1776,6 +2035,7 @@ Examples:
   python scripts/generate_crud.py --entity users --fields "name:str,email:str,is_active:bool"
   python scripts/generate_crud.py --entity products --fields "title:str,price:float,description:str?" --dry-run
   python scripts/generate_crud.py --entity orders --fields "amount:float,status:str" --force
+  python scripts/generate_crud.py --entity posts --fields "title:str,content:text" --with-rollback
         """
     )
 
@@ -1803,6 +2063,12 @@ Examples:
         help='Overwrite existing files and directories'
     )
 
+    parser.add_argument(
+        '--with-rollback',
+        action='store_true',
+        help='Use transaction system with automatic rollback on failure (recommended for production)'
+    )
+
     args = parser.parse_args()
 
     try:
@@ -1821,10 +2087,10 @@ Examples:
         directories = get_directory_structure(validated_entity)
 
         # Check for existing directories (unless force or dry-run)
-        if not args.dry_run:
+        if not args.dry_run and not args.with_rollback:
             check_existing_directories(directories, force=args.force)
 
-        # Create directory structure
+        # Choose generation method based on rollback option
         if args.dry_run:
             print("\n🔍 Dry-run mode - showing what would be created:")
             create_directories(directories, dry_run=True)
@@ -1836,7 +2102,11 @@ Examples:
             print(f"\n📄 Stage 4: Database migration (dry-run)")
             run_stage_4(validated_entity, fields, dry_run=True)
             print(f"\n✅ Dry-run complete: Would create {len(directories)} directories, 13 files, and 1 migration")
+        elif args.with_rollback:
+            # Use new transaction-based generation
+            generate_crud_with_transaction(validated_entity, fields, force=args.force)
         else:
+            # Use original generation method
             print("\n📁 Creating directory structure:")
             create_directories(directories, dry_run=False)
             generate_init_files(validated_entity, dry_run=False)
