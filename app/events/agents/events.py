@@ -1,9 +1,10 @@
 """Agent domain events"""
 
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import Any
 
 from app.events.core.base import BaseEvent
+from typing_extensions import TypedDict
 
 
 class AgentEventPayload(TypedDict):

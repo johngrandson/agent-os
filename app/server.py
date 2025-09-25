@@ -1,9 +1,8 @@
 import logging
 
-from app.agents.api.orchestration_routers import orchestration_router
 from app.agents.api.routers import agent_router
 from app.container import Container
-from app.events import setup_broker_with_handlers
+from app.events import faststream_app, setup_broker_with_handlers
 from app.initialization import initialize_database, setup_agent_os_with_app
 from app.webhook.api.routers import webhook_router
 from core.config import config
@@ -71,8 +70,7 @@ def setup_routes(app: FastAPI):
         }
 
     app.include_router(agent_router, prefix="/api/v1/agents")
-    app.include_router(orchestration_router, prefix="/api/v1/orchestration")
-    app.include_router(webhook_router, prefix="/api/v1")
+    app.include_router(webhook_router, prefix="/api/v1/webhook")
 
 
 def setup_dependency_injection(container: Container):
@@ -80,7 +78,6 @@ def setup_dependency_injection(container: Container):
     container.wire(
         modules=[
             "app.agents.api.routers",
-            "app.agents.api.orchestration_routers",
             "app.webhook.api.routers",
         ]
     )
@@ -117,12 +114,31 @@ def create_app() -> FastAPI:
         # Initialize database (simple function call)
         await initialize_database()
 
+        # Start the FastStream application for both publishing and consuming
+        try:
+            await faststream_app.start()
+            logger.info("🚀 EVENTS: FastStream started - Publishers & Handlers active")
+        except Exception as e:
+            logger.error(f"❌ EVENTS: FastStream failed - {e}")
+            # Don't raise here to allow app to start, but log the issue
+            # This ensures the API is still functional even if events fail
+
         # Load all agents once
         await agent_cache.load_all_agents()
 
         # Setup AgentOS with all loaded agents
         nonlocal app
         app = setup_agent_os_with_app(agent_cache.get_all_agents(), app)
+
+    # Setup shutdown event
+    @app.on_event("shutdown")
+    async def cleanup_on_shutdown():
+        # Stop the FastStream application
+        try:
+            await faststream_app.stop()
+            logger.info("🛑 EVENTS: FastStream stopped")
+        except Exception as e:
+            logger.error(f"❌ EVENTS: Stop failed - {e}")
 
     return app
 

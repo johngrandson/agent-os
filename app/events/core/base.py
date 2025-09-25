@@ -52,9 +52,22 @@ class BaseEventPublisher(ABC):
                 },
                 channel=channel,
             )
-            self.logger.info(f"Published {event.event_type} event for {event.entity_id}")
+            # Use compact logging with emojis for easy identification
+            entity_short = event.entity_id[:8]  # First 8 chars for brevity
+            action_emoji = {
+                "created": "✅",
+                "updated": "🔄",
+                "deleted": "❌",
+                "knowledge_created": "📚",
+            }.get(event.event_type, "📤")
+
+            self.logger.info(f"{action_emoji} {event.event_type.upper()} {entity_short}")
         except Exception as e:
-            self.logger.error(f"Failed to publish {event.event_type}: {e}")
+            # Provide more specific error messages for common issues
+            if "connect()" in str(e):
+                self.logger.error(f"❌ BROKER NOT CONNECTED - {event.event_type}")
+            else:
+                self.logger.error(f"❌ PUBLISH FAILED {event.event_type}: {e}")
             raise
 
     async def publish_domain_event(self, event_type: str, event: BaseEvent) -> None:

@@ -1109,7 +1109,8 @@ def generate_event_events_file(entity_name: str, fields: list[FieldDefinition]) 
     template = f'''"""{entity_class} domain events"""
 
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import Any
+from typing_extensions import TypedDict
 
 from app.events.core.base import BaseEvent
 

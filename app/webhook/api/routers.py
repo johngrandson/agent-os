@@ -15,7 +15,7 @@ webhook_router = APIRouter()
 
 
 @webhook_router.post(
-    "/waha/webhook",
+    "/waha",
     response_model=None,
     status_code=200,
     summary="Handle WhatsApp webhook",

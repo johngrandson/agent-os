@@ -2,9 +2,10 @@
 
 import logging
 
-from app.agents.api.schemas import AgentResponse, CreateAgentResponse
 from app.events.core.registry import event_registry
 from faststream.redis import RedisRouter
+
+from .events import AgentEventPayload
 
 
 logger = logging.getLogger(__name__)
@@ -14,35 +15,49 @@ agent_router = RedisRouter()
 
 
 @agent_router.subscriber("agent.created")
-async def handle_agent_created(data: CreateAgentResponse):
+async def handle_agent_created(data: AgentEventPayload):
     """Handle agent created events"""
-    logger.info(f"Agent created: {data.id}")
-    logger.debug(f"Agent data: {data.model_dump()}")
+    agent_id = data["entity_id"]
+    agent_data = data["data"]
+    agent_short = agent_id[:8]
+
+    # Single compact log with all essential info
+    if "name" in agent_data:
+        logger.info(f"✅ HANDLER: Agent '{agent_data['name']}' [{agent_short}] - CREATED")
+    else:
+        logger.info(f"✅ HANDLER: Agent [{agent_short}] - CREATED")
 
 
 @agent_router.subscriber("agent.updated")
-async def handle_agent_updated(data: AgentResponse):
+async def handle_agent_updated(data: AgentEventPayload):
     """Handle agent updated events"""
-    logger.info(f"Agent updated: {data.id}")
-    logger.debug(f"Updated data: {data.model_dump()}")
+    agent_id = data["entity_id"]
+    agent_data = data["data"]
+    agent_short = agent_id[:8]
+
+    # Single compact log with all essential info
+    if "name" in agent_data:
+        logger.info(f"🔄 HANDLER: Agent '{agent_data['name']}' [{agent_short}] - UPDATED")
+    else:
+        logger.info(f"🔄 HANDLER: Agent [{agent_short}] - UPDATED")
 
 
 @agent_router.subscriber("agent.deleted")
-async def handle_agent_deleted(data: dict):
+async def handle_agent_deleted(data: AgentEventPayload):
     """Handle agent deleted events"""
-    entity_id = data.get("entity_id")
+    agent_id = data["entity_id"]
+    agent_short = agent_id[:8]
 
-    logger.info(f"Agent deleted: {entity_id}")
+    logger.info(f"❌ HANDLER: Agent [{agent_short}] - DELETED")
 
 
 @agent_router.subscriber("agent.knowledge_created")
-async def handle_agent_knowledge_created(data: dict):
+async def handle_agent_knowledge_created(data: AgentEventPayload):
     """Handle agent knowledge created events"""
-    entity_id = data.get("entity_id")
-    knowledge_data = data.get("data", {})
+    agent_id = data["entity_id"]
+    agent_short = agent_id[:8]
 
-    logger.info(f"Knowledge created for agent: {entity_id}")
-    logger.debug(f"Knowledge data: {knowledge_data}")
+    logger.info(f"📚 HANDLER: Agent [{agent_short}] - KNOWLEDGE CREATED")
 
 
 # Register the router with the event registry
