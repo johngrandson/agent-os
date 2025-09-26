@@ -27,14 +27,43 @@ class AgnoRuntimeAgent(RuntimeAgent):
         self._agno_agent = agno_agent
 
     async def arun(self, message: str) -> str:
-        """Run the agno agent with a message"""
-        result = await self._agno_agent.arun(input=message)
-        # Handle different return types from agno - get content as string
-        if hasattr(result, "content"):
-            return result.content
-        if isinstance(result, str):
-            return result
-        return str(result)
+        """Run the agno agent with a message, isolating sync operations from async context"""
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
+        # Run agno agent in thread pool to avoid async/sync conflicts
+        loop = asyncio.get_event_loop()
+
+        def run_agent_sync():
+            """Run the agent synchronously in a separate thread"""
+            # Use sync run method to avoid greenlet issues
+            return self._agno_agent.run(input=message)
+
+        try:
+            # Execute in thread pool to isolate sync database operations
+            with ThreadPoolExecutor(max_workers=1, thread_name_prefix="agno_agent") as executor:
+                result = await loop.run_in_executor(executor, run_agent_sync)
+
+            # Handle different return types from agno - get content as string
+            if hasattr(result, "content"):
+                return result.content
+            if isinstance(result, str):
+                return result
+            return str(result)
+
+        except Exception as e:
+            logger.error(f"Error running agent {self.name}: {e}")
+            # Fallback: try without thread pool as last resort
+            try:
+                result = await self._agno_agent.arun(input=message)
+                if hasattr(result, "content"):
+                    return result.content
+                if isinstance(result, str):
+                    return result
+                return str(result)
+            except Exception as fallback_error:
+                logger.error(f"Fallback also failed for agent {self.name}: {fallback_error}")
+                return f"Error: Agent {self.name} encountered an issue processing the request."
 
     @property
     def id(self) -> str:
