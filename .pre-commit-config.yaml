@@ -1,15 +1,18 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.5
+    rev: v0.13.1
     hooks:
       - id: ruff
-        name: ruff (lint + fix all)
-        args: ["--fix"]
+        name: ruff (lint + fix)
+        args: ["--fix", "--exit-non-zero-on-fix"]
       - id: ruff-format
-        name: ruff-format
+        name: ruff (format)
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
