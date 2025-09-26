@@ -105,6 +105,11 @@ async def agent_repository(test_session) -> AgentRepository:
     mock_scoped_session = MockScopedSession(test_session)
     infrastructure.database.session.session = mock_scoped_session
 
+    # Also mock the transactional session for service tests
+    import infrastructure.database.transactional
+
+    infrastructure.database.transactional.session = mock_scoped_session
+
     repo = AgentRepository()
 
     yield repo

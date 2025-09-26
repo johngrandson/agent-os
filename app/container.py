@@ -9,8 +9,8 @@ from app.events.orchestration.task_registry import TaskRegistry
 from app.events.webhooks.publisher import WebhookEventPublisher
 from app.initialization import AgentCache
 
-# Agno integration imports
-from app.integrations.agno import AgnoAgentConverter, AgnoKnowledgeAdapter, AgnoModelFactory
+# Provider imports
+from app.providers.factory import get_provider
 from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
 
 # Core imports
@@ -100,23 +100,8 @@ class Container(containers.DeclarativeContainer):
     # OpenAI client
     openai_client = providers.Singleton(AsyncOpenAI)
 
-    # Agno integration services
-    agno_model_factory = providers.Singleton(
-        AgnoModelFactory,
-        config=config_object,
-    )
-
-    agno_knowledge_adapter = providers.Singleton(
-        AgnoKnowledgeAdapter,
-        db_url=config_object.provided.AGNO_DB_URL,
-        event_publisher=agent_event_publisher,
-    )
-
-    agno_agent_converter = providers.Singleton(
-        AgnoAgentConverter,
-        knowledge_adapter=agno_knowledge_adapter,
-        model_factory=agno_model_factory,
-    )
+    # Agent provider factory
+    agent_provider = providers.Singleton(get_provider)
 
     # Repositories
     agent_repository = providers.Factory(AgentRepository)
@@ -135,7 +120,7 @@ class Container(containers.DeclarativeContainer):
     agent_cache = providers.Singleton(
         AgentCache,
         agent_repository=agent_repository,
-        agno_agent_converter=agno_agent_converter,
+        agent_provider=agent_provider,
     )
 
     # Webhook services

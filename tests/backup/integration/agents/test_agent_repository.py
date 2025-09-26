@@ -17,7 +17,30 @@ from app.agents.repositories.agent_repository import AgentRepository
 class TestAgentRepositoryCreate:
     """Test agent creation operations."""
 
-    # Test removed - had faulty logic comparing UUID with None
+    async def test_create_agent_should_persist_with_generated_id(
+        self, agent_repository: AgentRepository, agent_factory
+    ):
+        """Should create agent with auto-generated UUID."""
+        # Arrange
+        agent = agent_factory.build_agent()
+        original_id = agent.id
+
+        # Act
+        created_agent = await agent_repository.create_agent(agent=agent)
+
+        # Assert
+        assert created_agent is not None
+        assert created_agent.id == original_id
+        assert isinstance(created_agent.id, uuid.UUID)
+        assert created_agent.name == agent.name
+        assert created_agent.phone_number == agent.phone_number
+        assert created_agent.description == agent.description
+        assert created_agent.instructions == agent.instructions
+        assert created_agent.is_active == agent.is_active
+        assert created_agent.llm_model == agent.llm_model
+        assert created_agent.default_language == agent.default_language
+        assert created_agent.created_at is not None
+        assert created_agent.updated_at is not None
 
     async def test_create_agent_should_handle_optional_fields(
         self, agent_repository: AgentRepository, agent_factory
@@ -218,7 +241,22 @@ class TestAgentRepositoryUpdate:
         assert retrieved_agent.name == "Updated Name"
         assert retrieved_agent.description == "Updated Description"
 
-    # Test removed - timestamp comparison logic issues
+    async def test_update_agent_should_preserve_id_and_timestamps(
+        self, agent_repository: AgentRepository, persisted_agent: Agent
+    ):
+        """Should preserve ID and created timestamp, update modified timestamp."""
+        # Arrange
+        original_id = persisted_agent.id
+        original_created_at = persisted_agent.created_at
+        persisted_agent.name = "Updated Name"
+
+        # Act
+        updated_agent = await agent_repository.update_agent(agent=persisted_agent)
+
+        # Assert
+        assert updated_agent.id == original_id
+        assert updated_agent.created_at == original_created_at
+        assert updated_agent.updated_at >= original_created_at
 
     async def test_update_agent_should_handle_instructions_update(
         self, agent_repository: AgentRepository, persisted_agent: Agent
@@ -299,7 +337,28 @@ class TestAgentRepositoryConstraints:
         with pytest.raises(Exception):  # Database integrity error
             await agent_repository.create_agent(agent=duplicate_agent)
 
-    # Test removed - assumes Agent.create() generates UUID automatically
+    async def test_agent_model_factory_method(self, agent_factory):
+        """Should create agent using factory method with correct types."""
+        # Act
+        agent = Agent.create(
+            name="Test Agent",
+            phone_number="+5511999999999",
+            description="Test description",
+            instructions=["instruction1", "instruction2"],
+            is_active=True,
+            llm_model="gpt-4",
+            default_language="pt-BR",
+        )
+
+        # Assert
+        assert isinstance(agent.id, uuid.UUID)
+        assert agent.name == "Test Agent"
+        assert agent.phone_number == "+5511999999999"
+        assert agent.description == "Test description"
+        assert agent.instructions == ["instruction1", "instruction2"]
+        assert agent.is_active is True
+        assert agent.llm_model == "gpt-4"
+        assert agent.default_language == "pt-BR"
 
     async def test_agent_default_values(self, agent_factory):
         """Should apply correct default values."""

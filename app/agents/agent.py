@@ -20,7 +20,7 @@ class Agent(Base, TimestampMixin):
     instructions: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=False)
     llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    default_language: Mapped[str | None] = mapped_column(String(10), nullable=True, default="pt-BR")
+    default_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     __table_args__ = (
         Index("idx_phone_number_created_at", "phone_number", "created_at", unique=True),
@@ -39,6 +39,7 @@ class Agent(Base, TimestampMixin):
         default_language: str | None = "pt-BR",
     ) -> Agent:
         return cls(
+            id=uuid.uuid4(),  # Generate UUID immediately
             name=name,
             phone_number=phone_number,
             description=description,

@@ -333,7 +333,7 @@ class TestAgentDeletionEvents:
         # Verify each call had correct agent ID
         call_args_list = mock_event_publisher.agent_deleted.call_args_list
         expected_agent_ids = {str(agent.id) for agent in persisted_agents}
-        actual_agent_ids = {call_args[0][0] for call_args in call_args_list}
+        actual_agent_ids = {call_args[1]["agent_id"] for call_args in call_args_list}
 
         assert actual_agent_ids == expected_agent_ids
 
@@ -424,8 +424,8 @@ class TestAgentEventData:
         mock_event_publisher.agent_deleted.assert_called_once_with(agent_id=agent_id)
 
         # Verify the agent_id is a valid UUID string
-        call_args = mock_event_publisher.agent_deleted.call_args[0]
-        passed_agent_id = call_args[0]
+        call_args = mock_event_publisher.agent_deleted.call_args[1]
+        passed_agent_id = call_args["agent_id"]
 
         # Should be able to parse as UUID
         parsed_uuid = uuid.UUID(passed_agent_id)
@@ -452,11 +452,11 @@ class TestAgentEventData:
         # Assert - All events should have consistent agent ID
         create_call = mock_event_publisher.agent_created.call_args[1]
         update_call = mock_event_publisher.agent_updated.call_args[1]
-        delete_call = mock_event_publisher.agent_deleted.call_args[0]
+        delete_call = mock_event_publisher.agent_deleted.call_args[1]
 
         assert create_call["agent_id"] == agent_id
         assert update_call["agent_id"] == agent_id
-        assert delete_call[0] == agent_id
+        assert delete_call["agent_id"] == agent_id
 
 
 @pytest.mark.asyncio

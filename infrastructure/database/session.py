@@ -74,11 +74,9 @@ async def session_factory() -> AsyncGenerator[AsyncSession, None]:
         await _session.close()
 
 
-@asynccontextmanager
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+def get_session():
     """Get database session for use in repositories"""
-    async with session_factory() as session:
-        yield session
+    return session_factory()
 
 
 # Alias for backwards compatibility

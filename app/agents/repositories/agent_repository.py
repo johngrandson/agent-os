@@ -73,9 +73,10 @@ class AgentRepository:
     async def update_agent(self, *, agent: Agent) -> Agent:
         """Update existing agent"""
         async with get_session() as session:
-            await session.merge(agent)
+            merged_agent = await session.merge(agent)
             await session.commit()
-            return agent
+            await session.refresh(merged_agent)
+            return merged_agent
 
     async def delete_agent(self, *, agent: Agent) -> None:
         """Delete agent"""

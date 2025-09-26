@@ -3,7 +3,7 @@ import logging
 from app.agents.api.routers import agent_router
 from app.container import Container
 from app.events import faststream_app, setup_broker_with_handlers
-from app.initialization import initialize_database, setup_agent_os_with_app
+from app.initialization import initialize_database
 from app.webhook.api.routers import webhook_router
 from core.config import config
 from core.exceptions import CustomException
@@ -92,8 +92,9 @@ def create_app() -> FastAPI:
     # Setup event broker with all registered handlers
     setup_broker_with_handlers()
 
-    # Get agent cache from container
+    # Get agent cache and provider from container
     agent_cache = container.agent_cache()
+    agent_provider = container.agent_provider()
 
     # Create FastAPI app
     app = FastAPI(
@@ -124,11 +125,14 @@ def create_app() -> FastAPI:
             # This ensures the API is still functional even if events fail
 
         # Load all agents once
-        await agent_cache.load_all_agents()
+        db_agents, _ = await agent_cache.load_all_agents()
 
-        # Setup AgentOS with all loaded agents
+        # Convert agents for runtime using provider
+        runtime_agents = await agent_provider.convert_agents_for_runtime(db_agents)
+
+        # Setup runtime system (AgentOS) with provider
         nonlocal app
-        app = setup_agent_os_with_app(agent_cache.get_all_agents(), app)
+        app = agent_provider.setup_runtime_with_app(runtime_agents, app)
 
     # Setup shutdown event
     @app.on_event("shutdown")
