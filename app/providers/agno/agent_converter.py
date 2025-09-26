@@ -4,6 +4,7 @@ import logging
 
 from agno.agent import Agent as AgnoAgent
 from app.agents.agent import Agent
+from app.providers.agno.database_factory import AgnoDatabaseFactory
 from app.providers.agno.knowledge_adapter import AgnoKnowledgeAdapter
 from app.providers.agno.model_factory import AgnoModelFactory
 
@@ -21,6 +22,8 @@ class AgnoAgentConverter:
     ):
         self.knowledge_adapter = knowledge_adapter
         self.model_factory = model_factory
+        # Create database for agent history storage
+        self.db = AgnoDatabaseFactory.create_postgres_db()
 
     async def convert_agent(
         self,
@@ -58,8 +61,28 @@ class AgnoAgentConverter:
             "agent_id": str(db_agent.id),
         }
 
-        # Get appropriate model
-        model = self.model_factory.create_default_model()
+        # Get appropriate model based on agent's llm_model preference
+        if db_agent.llm_model:
+            model = self.model_factory.create_openai_model(db_agent.llm_model)
+        else:
+            model = self.model_factory.create_default_model()
+
+        # Build instructions with language context
+        instructions = db_agent.instructions or []
+        if db_agent.default_language:
+            language_instruction = (
+                f"Always respond in the default language: {db_agent.default_language}"
+            )
+            instructions = [language_instruction] + instructions
+
+        # Adjust history settings based on database availability
+        if self.db is None:
+            # No database available - disable history to avoid warning
+            add_history_to_context = False
+            logger.warning(
+                f"Database not available for agent {db_agent.name}. "
+                "Conversation history will not be stored or used in context."
+            )
 
         # Create AgnoAgent with configuration
         agno_agent = AgnoAgent(
@@ -70,9 +93,13 @@ class AgnoAgentConverter:
             add_history_to_context=add_history_to_context,
             num_history_runs=num_history_runs,
             add_datetime_to_context=add_datetime_to_context,
+            enable_user_memories=True,
+            enable_agentic_memory=True,
             markdown=markdown,
+            instructions=instructions,
             knowledge_filters=agent_knowledge_filters,
             model=model,
+            db=self.db,  # Add database for history storage
         )
 
         logger.info(f"Successfully converted agent {db_agent.name}")
@@ -108,14 +135,19 @@ class AgnoAgentConverter:
 
         agno_agents = []
         for db_agent in db_agents:
-            agno_agent = await self.convert_agent(
-                db_agent,
-                search_knowledge=True,
-                add_history_to_context=True,
-                num_history_runs=3,
-                add_datetime_to_context=True,
-            )
-            agno_agents.append(agno_agent)
+            try:
+                agno_agent = await self.convert_agent(
+                    db_agent,
+                    search_knowledge=True,
+                    add_history_to_context=True,
+                    num_history_runs=3,
+                    add_datetime_to_context=True,
+                )
+                agno_agents.append(agno_agent)
+            except Exception as e:
+                logger.error(f"Failed to convert AgentOS agent {db_agent.name}: {e}")
+                # Continue processing other agents
+                continue
 
         logger.info(f"Successfully converted {len(agno_agents)} AgentOS agents")
         return agno_agents
