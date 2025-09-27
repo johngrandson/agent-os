@@ -11,11 +11,11 @@ from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import ResponseLogMiddleware, SQLAlchemyMiddleware
 from core.logging_config import configure_logging
 from dotenv import load_dotenv
-
-from fastapi import Depends, FastAPI, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from fastapi import Depends, FastAPI, Request
 
 
 # Load environment variables
