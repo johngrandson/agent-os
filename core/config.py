@@ -98,6 +98,20 @@ class Config(BaseSettings):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     @property
+    def writer_db_url(self) -> str:
+        """Writer database URL - use WRITER_DB_URL or construct from components"""
+        if self.WRITER_DB_URL:
+            return self.WRITER_DB_URL
+        return self.database_url
+
+    @property
+    def reader_db_url(self) -> str:
+        """Reader database URL - use READER_DB_URL or construct from components"""
+        if self.READER_DB_URL:
+            return self.READER_DB_URL
+        return self.database_url
+
+    @property
     def redis_url(self) -> str:
         """Construct Redis URL from components"""
         if self.REDIS_URL:

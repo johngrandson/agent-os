@@ -80,8 +80,8 @@ jobs:
           poetry run alembic upgrade head
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
-          WRITER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
-          READER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
+          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
 
       - name: Run tests with coverage
         run: |
@@ -93,9 +93,9 @@ jobs:
             --junitxml=pytest.xml \
             -v
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
-          WRITER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
-          READER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
+          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
+          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
           REDIS_URL: redis://localhost:6379
           ENVIRONMENT: test
 

@@ -35,8 +35,8 @@ class EngineType(Enum):
 
 
 engines = {
-    EngineType.WRITER: create_async_engine(config.WRITER_DB_URL, pool_recycle=3600),
-    EngineType.READER: create_async_engine(config.READER_DB_URL, pool_recycle=3600),
+    EngineType.WRITER: create_async_engine(config.writer_db_url, pool_recycle=3600),
+    EngineType.READER: create_async_engine(config.reader_db_url, pool_recycle=3600),
 }
 
 
