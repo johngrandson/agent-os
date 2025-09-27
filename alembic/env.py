@@ -1,7 +1,10 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
-from infrastructure.database import Base
+
+# Import Base from the models, not from infrastructure.database which has async engines
+from app.agents.agent import Base
 from sqlalchemy import engine_from_config, pool
 
 
@@ -38,7 +41,13 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # Use environment variable or fallback to config
+    url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
+    # Convert asyncpg URL to sync psycopg2 URL for Alembic
+    if url and "postgresql+asyncpg://" in url:
+        url = url.replace("postgresql+asyncpg://", "postgresql://")
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -57,8 +66,19 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # Override URL with environment variable if present
+    configuration = config.get_section(config.config_ini_section, {})
+
+    # Use environment variable for database URL
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Convert asyncpg URL to sync psycopg2 URL for Alembic
+        if "postgresql+asyncpg://" in database_url:
+            database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
+        configuration["sqlalchemy.url"] = database_url
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
