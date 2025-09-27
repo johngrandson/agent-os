@@ -99,24 +99,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           ENVIRONMENT: test
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        if: always()
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-      - name: Upload test results
-        uses: dorny/test-reporter@v1
-        if: always() && hashFiles('pytest.xml') != ''
-        with:
-          name: pytest-results
-          path: pytest.xml
-          reporter: java-junit
-          fail-on-error: false
-
       - name: Test report summary
         if: always()
         run: |
