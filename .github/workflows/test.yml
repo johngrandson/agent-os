@@ -80,6 +80,8 @@ jobs:
           poetry run alembic upgrade head
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          WRITER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          READER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
 
       - name: Run tests with coverage
         run: |
@@ -92,6 +94,8 @@ jobs:
             -v
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          WRITER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
+          READER_DB_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
           REDIS_URL: redis://localhost:6379
           ENVIRONMENT: test
 
@@ -106,7 +110,7 @@ jobs:
 
       - name: Upload test results
         uses: dorny/test-reporter@v1
-        if: always()
+        if: always() && hashFiles('pytest.xml') != ''
         with:
           name: pytest-results
           path: pytest.xml
