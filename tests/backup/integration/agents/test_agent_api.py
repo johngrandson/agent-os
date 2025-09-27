@@ -14,10 +14,10 @@ from app.agents.agent import Agent
 from app.agents.api.routers import agent_router
 from app.agents.services.agent_service import AgentService
 from app.container import Container
+from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -48,9 +48,9 @@ def test_container():
 def app_with_agent_router(test_container):
     """Create FastAPI app with agent router for testing."""
     from core.exceptions import CustomException
+    from fastapi.responses import JSONResponse
 
     from fastapi import Request
-    from fastapi.responses import JSONResponse
 
     app = FastAPI(title="Test Agent API")
     app.include_router(agent_router, prefix="/agents", tags=["agents"])
@@ -92,7 +92,6 @@ def sync_client(app_with_agent_router):
     return TestClient(app_with_agent_router)
 
 
-@pytest.mark.asyncio
 @pytest.mark.agent_api
 class TestAgentAPICreate:
     """Test agent creation API endpoint."""
@@ -135,6 +134,7 @@ class TestAgentAPICreate:
         assert command.name == sample_agent_data["name"]
         assert command.phone_number == sample_agent_data["phone_number"]
 
+    @pytest.mark.asyncio
     async def test_create_agent_should_handle_minimal_data(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -161,6 +161,7 @@ class TestAgentAPICreate:
         assert response_data["name"] == "Minimal Agent"
         assert response_data["phone_number"] == "+5511999999999"
 
+    @pytest.mark.asyncio
     async def test_create_agent_should_return_400_for_invalid_data(self, async_client: AsyncClient):
         """Should return 400 for invalid request data."""
         # Arrange
@@ -176,6 +177,7 @@ class TestAgentAPICreate:
         # Assert
         assert response.status_code == 422  # FastAPI validation error
 
+    @pytest.mark.asyncio
     async def test_create_agent_should_return_409_for_duplicate_phone(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -206,6 +208,7 @@ class TestAgentAPICreate:
 class TestAgentAPIRead:
     """Test agent read API endpoints."""
 
+    @pytest.mark.asyncio
     async def test_get_agents_should_return_paginated_list(
         self,
         async_client: AsyncClient,
@@ -237,6 +240,7 @@ class TestAgentAPIRead:
         call_kwargs = mock_agent_service.get_agent_list.call_args[1]
         assert call_kwargs["limit"] == 2
 
+    @pytest.mark.asyncio
     async def test_get_agents_should_use_default_limit(
         self,
         async_client: AsyncClient,
@@ -258,6 +262,7 @@ class TestAgentAPIRead:
         call_kwargs = mock_agent_service.get_agent_list.call_args[1]
         assert call_kwargs["limit"] == 10  # Default from router
 
+    @pytest.mark.asyncio
     async def test_get_agent_by_id_should_return_agent(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -282,6 +287,7 @@ class TestAgentAPIRead:
             agent_id=str(persisted_agent.id)
         )
 
+    @pytest.mark.asyncio
     async def test_get_agent_by_id_should_return_404_for_nonexistent(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -297,6 +303,7 @@ class TestAgentAPIRead:
         # Assert
         assert response.status_code == 404
 
+    @pytest.mark.asyncio
     async def test_get_agent_by_id_should_handle_invalid_uuid(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -317,6 +324,7 @@ class TestAgentAPIRead:
 class TestAgentAPIUpdate:
     """Test agent update API endpoint."""
 
+    @pytest.mark.asyncio
     async def test_update_agent_should_return_updated_agent(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -349,6 +357,7 @@ class TestAgentAPIUpdate:
         # Verify service was called
         mock_agent_service.update_agent.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_update_agent_should_merge_with_existing_data(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -374,6 +383,7 @@ class TestAgentAPIUpdate:
         assert command.phone_number == persisted_agent.phone_number
         assert command.is_active == persisted_agent.is_active
 
+    @pytest.mark.asyncio
     async def test_update_agent_should_return_404_for_nonexistent(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -391,6 +401,7 @@ class TestAgentAPIUpdate:
         # Assert
         assert response.status_code == 404
 
+    @pytest.mark.asyncio
     async def test_update_agent_should_return_409_for_phone_conflict(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -414,6 +425,7 @@ class TestAgentAPIUpdate:
         # CustomException handler returns {error_code, message} not {detail}
         assert "phone number already exists" in response_data["message"]
 
+    @pytest.mark.asyncio
     async def test_update_agent_should_handle_empty_update(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -438,6 +450,7 @@ class TestAgentAPIUpdate:
 class TestAgentAPIDelete:
     """Test agent delete API endpoint."""
 
+    @pytest.mark.asyncio
     async def test_delete_agent_should_return_204(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -456,6 +469,7 @@ class TestAgentAPIDelete:
         # Verify service was called with correct ID
         mock_agent_service.delete_agent.assert_called_once_with(agent_id=str(persisted_agent.id))
 
+    @pytest.mark.asyncio
     async def test_delete_agent_should_return_404_for_nonexistent(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -471,6 +485,7 @@ class TestAgentAPIDelete:
         # Assert
         assert response.status_code == 404
 
+    @pytest.mark.asyncio
     async def test_delete_agent_should_handle_invalid_uuid(
         self, async_client: AsyncClient, app_with_agent_router
     ):
@@ -491,6 +506,7 @@ class TestAgentAPIDelete:
 class TestAgentAPIValidation:
     """Test API request validation."""
 
+    @pytest.mark.asyncio
     async def test_create_agent_should_validate_required_fields(self, async_client: AsyncClient):
         """Should validate required fields in create request."""
         # Arrange
@@ -507,6 +523,7 @@ class TestAgentAPIValidation:
         error_data = response.json()
         assert "detail" in error_data
 
+    @pytest.mark.asyncio
     async def test_create_agent_should_validate_field_types(self, async_client: AsyncClient):
         """Should validate field types in create request."""
         # Arrange
@@ -523,6 +540,7 @@ class TestAgentAPIValidation:
         # Assert
         assert response.status_code == 422
 
+    @pytest.mark.asyncio
     async def test_get_agents_should_validate_query_parameters(self, async_client: AsyncClient):
         """Should validate query parameters."""
         # Act
@@ -531,6 +549,7 @@ class TestAgentAPIValidation:
         # Assert
         assert response.status_code == 422
 
+    @pytest.mark.asyncio
     async def test_get_agents_should_enforce_max_limit(
         self,
         async_client: AsyncClient,
@@ -548,6 +567,7 @@ class TestAgentAPIValidation:
 class TestAgentAPIResponseFormat:
     """Test API response format and serialization."""
 
+    @pytest.mark.asyncio
     async def test_agent_response_should_serialize_uuid_to_string(
         self, async_client: AsyncClient, app_with_agent_router, persisted_agent: Agent
     ):
@@ -566,6 +586,7 @@ class TestAgentAPIResponseFormat:
         assert isinstance(response_data["id"], str)
         # UUID should be serialized as string, not object
 
+    @pytest.mark.asyncio
     async def test_agent_response_should_include_all_fields(
         self, async_client: AsyncClient, app_with_agent_router, agent_factory
     ):
@@ -603,6 +624,7 @@ class TestAgentAPIResponseFormat:
         for field in expected_fields:
             assert field in response_data
 
+    @pytest.mark.asyncio
     async def test_agent_response_should_handle_null_fields(
         self, async_client: AsyncClient, app_with_agent_router, agent_factory
     ):

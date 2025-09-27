@@ -5,10 +5,10 @@ and demonstrate the pluralization issue in live API endpoints.
 """
 
 import pytest
+from fastapi.testclient import TestClient
 from scripts.generate_crud import get_table_name
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 
 class TestAPIRouterPrefixes:

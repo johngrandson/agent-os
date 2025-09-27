@@ -70,7 +70,7 @@ class TestAgentCreationEvents:
         )
 
         # Act
-        created_agent = await agent_service.create_agent(command=command)
+        await agent_service.create_agent(command=command)
 
         # Assert
         mock_event_publisher.agent_created.assert_called_once()
@@ -191,7 +191,7 @@ class TestAgentUpdateEvents:
         )
 
         # Act
-        updated_agent = await agent_service.update_agent(command=command)
+        await agent_service.update_agent(command=command)
 
         # Assert
         call_kwargs = mock_event_publisher.agent_updated.call_args[1]
@@ -352,7 +352,7 @@ class TestAgentEventData:
         command = agent_factory.build_create_command()
 
         # Act
-        created_agent = await agent_service.create_agent(command=command)
+        await agent_service.create_agent(command=command)
 
         # Assert
         call_kwargs = mock_event_publisher.agent_created.call_args[1]
@@ -389,7 +389,7 @@ class TestAgentEventData:
         command = agent_factory.build_update_command(agent_id=str(persisted_agent.id))
 
         # Act
-        updated_agent = await agent_service.update_agent(command=command)
+        await agent_service.update_agent(command=command)
 
         # Assert
         call_kwargs = mock_event_publisher.agent_updated.call_args[1]
