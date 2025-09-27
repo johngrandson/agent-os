@@ -4,6 +4,7 @@ Tests for Fraud Detection Service.
 Tests business logic and result processing without requiring actual models.
 """
 
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -84,7 +85,7 @@ class TestFraudDetectionService:
         """Test processing of high-risk fraud result."""
         # Mock high fraud score result
         raw_result = [[{"label": "FRAUD", "score": 0.9}]]
-        context = {"amount": 5000.0, "merchant": "suspicious_shop"}
+        context: dict[str, Any] = {"amount": 5000.0, "merchant": "suspicious_shop"}
 
         result = fraud_service._process_fraud_result(raw_result, context)
 
@@ -98,7 +99,7 @@ class TestFraudDetectionService:
         """Test processing of low-risk fraud result."""
         # Mock low fraud score result
         raw_result = [[{"label": "LEGITIMATE", "score": 0.1}]]
-        context = {"amount": 50.0, "merchant": "grocery_store"}
+        context: dict[str, Any] = {"amount": 50.0, "merchant": "grocery_store"}
 
         result = fraud_service._process_fraud_result(raw_result, context)
 
@@ -111,7 +112,7 @@ class TestFraudDetectionService:
         """Test error handling in result processing."""
         # Invalid result format
         raw_result = "invalid_format"
-        context = {}
+        context: dict[str, Any] = {}
 
         result = fraud_service._process_fraud_result(raw_result, context)
 
@@ -123,7 +124,7 @@ class TestFraudDetectionService:
 
     def test_identify_risk_factors(self, fraud_service):
         """Test risk factor identification."""
-        context = {"amount": 15000.0, "merchant": "crypto_exchange"}
+        context: dict[str, Any] = {"amount": 15000.0, "merchant": "crypto_exchange"}
 
         factors = fraud_service._identify_risk_factors(context, 0.8)
 
