@@ -1,12 +1,11 @@
 """Model factory for creating Agno-compatible AI models"""
 
-import logging
-
 from agno.models.openai import OpenAIChat
 from core.config import Config
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgnoModelFactory:

@@ -29,11 +29,14 @@ faststream = { extras = ["redis"], version = "^0.5.0" }
 pytest = "^7.0.0"
 pytest-asyncio = "^0.21.0"
 alembic = "^1.16.5"
+transformers = "^4.35.0"
+torch = "^2.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.18.2"
 pre-commit = "^4.3.0"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -179,4 +182,30 @@ exclude = [
     "^examples/",
     "^build/",
     "^dist/"
+]
+
+[tool.pytest.ini_options]
+# Configure pytest-asyncio
+asyncio_mode = "auto"
+# Test discovery
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Output
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+]
+# Custom markers
+markers = [
+    "unit: Unit tests for individual functions",
+    "integration: Integration tests for CLI generator",
+    "api: API endpoint tests",
+    "pluralization: Tests related to pluralization logic",
+    "failing: Tests that demonstrate current bugs (should fail)",
+    "compound_words: Tests for compound word pluralization",
+    "english_rules: Tests for special English pluralization rules",
 ]

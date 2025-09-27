@@ -3,17 +3,17 @@ Application initialization - handles database, agents, and AgentOS setup
 Following CLAUDE.md: boring, direct, single responsibility
 """
 
-import logging
 from pathlib import Path
 
 from app.agents.agent import Agent
 from app.providers.base import AgentProvider, RuntimeAgent
+from core.logger import get_module_logger
 from dotenv import load_dotenv
 from infrastructure.database import Base
 from infrastructure.database.session import EngineType, engines
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgentCache:

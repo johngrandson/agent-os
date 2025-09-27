@@ -1,12 +1,13 @@
 """Base classes for entity-based event system"""
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from core.logger import get_module_logger
 
-logger = logging.getLogger(__name__)
+
+logger = get_module_logger(__name__)
 
 
 @dataclass
@@ -31,7 +32,7 @@ class BaseEventPublisher(ABC):
 
     def __init__(self, broker) -> None:
         self.broker = broker
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_module_logger(f"{__name__}.{self.__class__.__name__}")
 
     @abstractmethod
     def get_domain_prefix(self) -> str:

@@ -1,12 +1,12 @@
 """Event registry for managing handlers and publishers"""
 
-import logging
 from collections.abc import Callable
 
+from core.logger import get_module_logger
 from faststream.redis import RedisRouter
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class EventRegistry:

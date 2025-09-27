@@ -3,8 +3,6 @@ Agno provider implementation - wraps existing agno functionality.
 Following CLAUDE.md: boring wrapper, don't rewrite existing code.
 """
 
-import logging
-
 from agno.agent import Agent as AgnoAgent
 from agno.os import AgentOS
 from app.agents.agent import Agent
@@ -13,11 +11,12 @@ from app.providers.agno.knowledge_adapter import AgnoKnowledgeAdapter
 from app.providers.agno.model_factory import AgnoModelFactory
 from app.providers.base import AgentProvider, RuntimeAgent
 from core.config import get_config
+from core.logger import get_module_logger
 
 from fastapi import FastAPI
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgnoRuntimeAgent(RuntimeAgent):

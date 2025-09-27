@@ -1,15 +1,14 @@
 """Agent conversion logic from database agents to AgnoAgent instances"""
 
-import logging
-
 from agno.agent import Agent as AgnoAgent
 from app.agents.agent import Agent
 from app.providers.agno.database_factory import AgnoDatabaseFactory
 from app.providers.agno.knowledge_adapter import AgnoKnowledgeAdapter
 from app.providers.agno.model_factory import AgnoModelFactory
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgnoAgentConverter:

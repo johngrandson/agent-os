@@ -1,14 +1,13 @@
 """Orchestration event handlers"""
 
-import logging
-
 from app.events.core.registry import event_registry
 from app.events.orchestration.task_registry import TaskRegistry
 from app.events.orchestration.task_state import TaskStatus
+from core.logger import get_module_logger
 from faststream.redis import RedisRouter
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 # Create orchestration-specific router
 orchestration_router = RedisRouter()

@@ -5,18 +5,13 @@ This script tests various failure scenarios to ensure the rollback system
 works correctly and cleans up all changes.
 """
 
-import os
 import sys
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
-from typing import List
 
 # Add the scripts directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from generate_crud import parse_fields, FieldDefinition
+from generate_crud import parse_fields
 from crud_transaction import CRUDTransaction, CRUDGenerationError
 
 

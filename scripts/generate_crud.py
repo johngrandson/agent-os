@@ -1509,7 +1509,7 @@ def update_server_file(entity_name: str, dry_run: bool = False) -> None:
     router_import = f"from app.{entity_name}.api.routers import {entity_name}_router"
 
     # Find import insertion point (after webhook_router import)
-    webhook_import = "from app.webhook.api.routers import webhook_router"
+    webhook_import = "from app.webhooks.api.routers import webhook_router"
     import_insertion_point = content.find(webhook_import)
 
     if import_insertion_point != -1:
@@ -1534,7 +1534,7 @@ def update_server_file(entity_name: str, dry_run: bool = False) -> None:
     # Find container.wire section
     wire_modules_start = content.find('container.wire(')
     modules_start = content.find('modules=[', wire_modules_start)
-    webhook_module = '"app.webhook.api.routers",'
+    webhook_module = '"app.webhooks.api.routers",'
     webhook_insertion_point = content.find(webhook_module)
 
     if webhook_insertion_point != -1:
@@ -1992,7 +1992,7 @@ def _update_server_content(content: str, entity_name: str) -> str:
     router_import = f"from app.{entity_name}.api.routers import {entity_name}_router"
 
     # Find import insertion point (after webhook_router import)
-    webhook_import = "from app.webhook.api.routers import webhook_router"
+    webhook_import = "from app.webhooks.api.routers import webhook_router"
     import_insertion_point = content.find(webhook_import)
 
     if import_insertion_point != -1:
@@ -2015,7 +2015,7 @@ def _update_server_content(content: str, entity_name: str) -> str:
     wiring_module = f'"app.{entity_name}.api.routers",'
 
     # Find container.wire section
-    webhook_module = '"app.webhook.api.routers",'
+    webhook_module = '"app.webhooks.api.routers",'
     webhook_insertion_point = content.find(webhook_module)
 
     if webhook_insertion_point != -1:

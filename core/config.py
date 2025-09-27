@@ -35,6 +35,16 @@ class Config(BaseSettings):
     AGNO_DEFAULT_MODEL: str = "gpt-4o-mini"
     OPENAI_API_KEY: str | None = None
 
+    # AI Services Configuration (HuggingFace)
+    HUGGINGFACE_API_TOKEN: str = ""
+    HUGGINGFACE_CACHE_DIR: str = "/tmp/hf_cache"
+
+    # Specialized AI Service Models
+    HUGGINGFACE_FRAUD_MODEL: str = "distilbert-base-uncased"
+    HUGGINGFACE_SENTIMENT_MODEL: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+    HUGGINGFACE_MODERATION_MODEL: str = "unitary/toxic-bert"
+    HUGGINGFACE_CLASSIFICATION_MODEL: str = "facebook/bart-large-mnli"
+
     # WAHA (WhatsApp API) Configuration
     WAHA_API_URL: str = "http://waha:3000/api"
     WAHA_BASE_URL: str = "http://waha:3000"

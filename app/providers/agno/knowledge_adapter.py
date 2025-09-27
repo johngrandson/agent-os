@@ -1,15 +1,15 @@
 """Knowledge system adapter for Agno integration"""
 
 import asyncio
-import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from app.events.agents.publisher import AgentEventPublisher
 from app.knowledge.services.agent_knowledge_factory import AgentKnowledgeFactory
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgnoKnowledgeAdapter:

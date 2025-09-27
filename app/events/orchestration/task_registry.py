@@ -1,12 +1,12 @@
 """Task registry for in-memory task state management"""
 
-import logging
 from collections import defaultdict
 
 from app.events.orchestration.task_state import TaskState, TaskStatus
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class TaskRegistry:
@@ -16,7 +16,7 @@ class TaskRegistry:
         self._tasks: dict[str, TaskState] = {}
         self._dependencies_graph: dict[str, set[str]] = defaultdict(set)  # task_id -> dependents
         self._completed_tasks: set[str] = set()
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = get_module_logger(f"{__name__}.{self.__class__.__name__}")
 
     def create_task(
         self,

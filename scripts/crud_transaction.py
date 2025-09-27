@@ -13,7 +13,7 @@ import subprocess
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, NamedTuple, Optional, Tuple
+from typing import Any, Callable, List, NamedTuple, Optional
 
 # Import from generate_crud to get FieldDefinition and related functions
 from generate_crud import FieldDefinition, get_table_name, get_sqlalchemy_column_type

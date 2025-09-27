@@ -1,16 +1,15 @@
 """WhatsApp webhook API routers"""
 
-import logging
-
 from app.container import Container
 from app.events.webhooks.publisher import WebhookEventPublisher
-from app.webhook.api.schemas import WebhookData
+from app.webhooks.api.schemas import WebhookData
+from core.logger import get_module_logger
 from dependency_injector.wiring import Provide, inject
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 webhook_router = APIRouter()
 
 

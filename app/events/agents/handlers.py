@@ -1,14 +1,13 @@
 """Agent event handlers"""
 
-import logging
-
 from app.events.core.registry import event_registry
+from core.logger import get_module_logger
 from faststream.redis import RedisRouter
 
 from .events import AgentEventPayload
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 # Create agent-specific router
 agent_router = RedisRouter()

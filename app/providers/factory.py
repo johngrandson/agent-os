@@ -3,13 +3,13 @@ Simple provider factory for environment-based provider selection.
 Following CLAUDE.md: boring over clever, single responsibility.
 """
 
-import logging
 import os
 
 from app.providers.base import AgentProvider
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 def get_provider() -> AgentProvider:

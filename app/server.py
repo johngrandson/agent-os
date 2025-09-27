@@ -1,14 +1,13 @@
-import logging
-
 from app.agents.api.routers import agent_router
 from app.container import Container
 from app.events import faststream_app, setup_broker_with_handlers
 from app.initialization import initialize_database
-from app.webhook.api.routers import webhook_router
+from app.webhooks.api.routers import webhook_router
 from core.config import config
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
 from core.fastapi.middlewares import ResponseLogMiddleware, SQLAlchemyMiddleware
+from core.logger import get_module_logger
 from core.logging_config import configure_logging
 from dotenv import load_dotenv
 from fastapi.middleware import Middleware
@@ -23,7 +22,7 @@ load_dotenv()
 
 # Configure logging early
 configure_logging(debug=config.DEBUG)
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 def create_middlewares():
@@ -78,7 +77,7 @@ def setup_dependency_injection(container: Container):
     container.wire(
         modules=[
             "app.agents.api.routers",
-            "app.webhook.api.routers",
+            "app.webhooks.api.routers",
         ]
     )
 

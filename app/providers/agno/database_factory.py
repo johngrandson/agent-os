@@ -1,16 +1,16 @@
 """Database factory for Agno agent history storage"""
 
 import contextlib
-import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from threading import Lock
 
 from agno.db.postgres.postgres import PostgresDb
 from core.config import get_config
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AsyncPostgresDbWrapper:

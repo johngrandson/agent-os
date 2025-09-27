@@ -11,7 +11,7 @@ from app.initialization import AgentCache
 
 # Provider imports
 from app.providers.factory import get_provider
-from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
+from app.webhooks.services.webhook_agent_processor import WebhookAgentProcessor
 
 # Core imports
 from core.config import get_config

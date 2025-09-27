@@ -3,12 +3,11 @@ Agent Knowledge Factory
 Creates shared knowledge base with agent-specific metadata filtering
 """
 
-import logging
-
 from app.events.agents.publisher import AgentEventPublisher
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class AgentKnowledgeFactory:

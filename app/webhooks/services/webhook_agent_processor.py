@@ -2,15 +2,14 @@
 Webhook Agent Processor - processes messages with request-time filtering and orchestration
 """
 
-import logging
-
 from app.events.orchestration.publisher import OrchestrationEventPublisher
 from app.events.orchestration.task_registry import TaskRegistry
 from app.events.orchestration.task_state import TaskState, TaskStatus
 from app.events.webhooks.publisher import WebhookEventPublisher
+from core.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 
 class WebhookAgentProcessor:

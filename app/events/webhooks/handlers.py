@@ -1,19 +1,19 @@
 """Webhook event handlers"""
 
 import asyncio
-import logging
 from datetime import UTC, datetime
 
 from app.events.broker import broker
 from app.events.core.registry import event_registry
 from app.events.webhooks.events import WebhookEventPayload
 from app.events.webhooks.publisher import WebhookEventPublisher
-from app.webhook.api.schemas import WebhookData, WebhookPayload
+from app.webhooks.api.schemas import WebhookData, WebhookPayload
 from core.config import config
+from core.logger import get_module_logger
 from faststream.redis import RedisRouter
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger(__name__)
 
 # Create webhook-specific router and publisher
 webhook_router = RedisRouter()
@@ -36,7 +36,7 @@ async def _safe_reconstruct_webhook_data(webhook_data_dict: dict | None) -> Webh
 async def _setup_agent_processor(agent_id: str):
     """Setup agent processor and get agent configuration"""
     from app.container import Container
-    from app.webhook.services.webhook_agent_processor import WebhookAgentProcessor
+    from app.webhooks.services.webhook_agent_processor import WebhookAgentProcessor
 
     container = Container()
     agent_service = container.agent_service()
