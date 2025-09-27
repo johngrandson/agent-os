@@ -2,10 +2,11 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import MetaData, engine_from_config, pool
 
-# Import Base from the models, not from infrastructure.database which has async engines
-from app.agents.agent import Base
-from sqlalchemy import engine_from_config, pool
+
+# Create empty metadata for Alembic - migrations will define the schema
+metadata = MetaData()
 
 
 # this is the Alembic Config object, which provides
@@ -21,7 +22,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 
 
-target_metadata = Base.metadata
+target_metadata = metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
