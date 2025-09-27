@@ -81,5 +81,8 @@ class AgentRepository:
     async def delete_agent(self, *, agent: Agent) -> None:
         """Delete agent"""
         async with get_session() as session:
-            await session.delete(agent)
-            await session.commit()
+            # Get the agent from current session to ensure it's tracked
+            tracked_agent = await session.get(Agent, agent.id)
+            if tracked_agent:
+                await session.delete(tracked_agent)
+                await session.commit()
