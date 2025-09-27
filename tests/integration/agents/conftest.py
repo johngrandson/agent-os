@@ -19,10 +19,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 @pytest_asyncio.fixture
 async def test_db_engine():
-    """Create test database engine with in-memory SQLite."""
-    # Use SQLite in-memory for fast tests
+    """Create test database engine with PostgreSQL."""
+    import os
+
+    # Use environment variables for database URL, fallback to default test config
+    database_url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("WRITER_DB_URL")
+        or "postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os"
+    )
+
     engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
+        database_url,
         echo=False,
         future=True,
     )
