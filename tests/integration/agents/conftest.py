@@ -9,7 +9,7 @@ import pytest
 import pytest_asyncio
 from app.container import Container
 from app.domains.agent_management.agent import Agent
-from app.domains.agent_management.api.schemas import CreateAgentCommand, UpdateAgentCommand
+from app.domains.agent_management.api.schemas import CreateAgentRequest, UpdateAgentRequest
 from app.domains.agent_management.events.publisher import AgentEventPublisher
 from app.domains.agent_management.repositories.agent_repository import AgentRepository
 from app.domains.agent_management.services.agent_service import AgentService
@@ -165,9 +165,9 @@ def sample_agent_data() -> dict:
 
 
 @pytest.fixture
-def create_agent_command(sample_agent_data) -> CreateAgentCommand:
-    """Create agent command for testing."""
-    return CreateAgentCommand(**sample_agent_data)
+def create_agent_request(sample_agent_data) -> CreateAgentRequest:
+    """Create agent request for testing."""
+    return CreateAgentRequest(**sample_agent_data)
 
 
 class AgentFactory:
@@ -202,8 +202,8 @@ class AgentFactory:
         return agents
 
     @staticmethod
-    def build_create_command(**kwargs) -> CreateAgentCommand:
-        """Build a create agent command."""
+    def build_create_request(**kwargs) -> CreateAgentRequest:
+        """Build a create agent request."""
         defaults = {
             "name": "Test Agent",
             "phone_number": f"+551199999{uuid.uuid4().hex[:4]}",
@@ -214,13 +214,12 @@ class AgentFactory:
             "default_language": "pt-BR",
         }
         defaults.update(kwargs)
-        return CreateAgentCommand(**defaults)
+        return CreateAgentRequest(**defaults)
 
     @staticmethod
-    def build_update_command(agent_id: str, **kwargs) -> UpdateAgentCommand:
-        """Build an update agent command."""
+    def build_update_request(**kwargs) -> UpdateAgentRequest:
+        """Build an update agent request."""
         defaults = {
-            "agent_id": agent_id,
             "name": "Updated Agent",
             "phone_number": f"+551199999{uuid.uuid4().hex[:4]}",
             "description": "Updated description",
@@ -230,7 +229,7 @@ class AgentFactory:
             "default_language": "en-US",
         }
         defaults.update(kwargs)
-        return UpdateAgentCommand(**defaults)
+        return UpdateAgentRequest(**defaults)
 
 
 @pytest.fixture

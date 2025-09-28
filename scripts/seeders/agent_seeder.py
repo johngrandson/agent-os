@@ -13,7 +13,11 @@ from pathlib import Path
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
-f
+from app.container import Container
+from app.domains.agent_management.agent import Agent
+from app.domains.agent_management.api.schemas import CreateAgentRequest
+from infrastructure.database import Base, EngineType, engines
+from infrastructure.database.session import reset_session_context, set_session_context
 
 
 class AgentSeeder:
@@ -59,11 +63,11 @@ class AgentSeeder:
         created_agents = []
         for agent_data in agents_data:
             try:
-                # Criar comando para o serviço
-                command = CreateAgentCommand(**agent_data)
+                # Criar request para o serviço
+                request = CreateAgentRequest(**agent_data)
 
                 # Tentar criar o agente - se já existir, vai dar erro
-                agent = await self.agent_service.create_agent(command=command)
+                agent = await self.agent_service.create_agent(request=request)
                 created_agents.append(agent)
                 status = "✅ ATIVO" if agent.is_active else "⏸️  INATIVO"
                 print(f"✨ Criado: {agent.name} ({agent.phone_number}) - {status}")

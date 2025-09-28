@@ -7,11 +7,19 @@ from app.domains.communication.webhooks.services.webhook_agent_processor import 
     WebhookAgentProcessor,
 )
 
+# Cache imports
+from app.infrastructure.cache import SemanticCacheService
+from app.infrastructure.cache.backends.factory import create_backend
+
+# Cache middleware imports
 # Provider imports
-from app.infrastructure.providers.factory import get_provider
+from app.infrastructure.providers.factory import create_cache_wrapper_factory, get_provider
 
 # Application imports
 from app.initialization import AgentCache
+
+# Event imports
+from app.shared.events.broker import broker
 
 # Core imports
 from core.config import get_config
@@ -73,13 +81,8 @@ class Container(containers.DeclarativeContainer):
         decode_responses=True,
     )
 
-    # Event broker - use a factory to return the singleton instance
-    @providers.Factory
-    def event_broker(self) -> object:
-        """Return the singleton broker instance"""
-        from app.shared.events.broker import broker
-
-        return broker
+    # Event broker - direct singleton reference
+    event_broker = providers.Object(broker)
 
     # Event publishers - domain-specific
     agent_event_publisher = providers.Singleton(
@@ -108,11 +111,35 @@ class Container(containers.DeclarativeContainer):
         event_publisher=agent_event_publisher,
     )
 
+    # Cache backend factory
+    cache_backend = providers.Factory(
+        create_backend,
+        backend_type=config_object.provided.CACHE_BACKEND,
+        redis_client=redis_client,
+        config=config_object,
+    )
+
+    # Semantic Cache Service (simplified, single responsibility with pluggable backend)
+    semantic_cache_service = providers.Singleton(
+        SemanticCacheService,
+        openai_client=openai_client,
+        config=config_object,
+        backend=cache_backend,
+    )
+
+    # Cached Runtime Agent Factory (wraps agents with cache)
+    cached_runtime_agent_factory = providers.Factory(
+        create_cache_wrapper_factory,
+        cache_service=semantic_cache_service,
+        config=config_object,
+    )
+
     # Agent cache for simple storage and lookup
     agent_cache = providers.Singleton(
         AgentCache,
         agent_repository=agent_repository,
         agent_provider=agent_provider,
+        cache_wrapper_factory=cached_runtime_agent_factory,
     )
 
     # Webhook services

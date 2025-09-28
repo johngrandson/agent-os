@@ -132,11 +132,8 @@ def create_app() -> FastAPI:
             # Don't raise here to allow app to start, but log the issue
             # This ensures the API is still functional even if events fail
 
-        # Load all agents once
-        db_agents, _ = await agent_cache.load_all_agents()
-
-        # Convert agents for runtime using provider
-        runtime_agents = await agent_provider.convert_agents_for_runtime(db_agents)
+        # Load all agents once (now includes cache wrapping if enabled)
+        db_agents, runtime_agents = await agent_cache.load_all_agents()
 
         # Setup runtime system (AgentOS) with provider
         nonlocal app

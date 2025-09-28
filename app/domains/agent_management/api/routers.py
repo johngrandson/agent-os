@@ -3,10 +3,8 @@
 from app.container import Container
 from app.domains.agent_management.api.schemas import (
     AgentResponse,
-    CreateAgentCommand,
     CreateAgentRequest,
     CreateAgentResponse,
-    UpdateAgentCommand,
     UpdateAgentRequest,
 )
 from app.domains.agent_management.services.agent_service import AgentService
@@ -28,11 +26,11 @@ agent_router.tags = ["API Agents"]
     description="""
     Retrieve a paginated list of all agents in the system.
 
-    **Parameters:**
-    - **limit**: Maximum number of agents to return (default: 10, max: 12)
-    - **prev**: ID of the previous agent for pagination (optional)
+    Parameters:
+    - limit: Maximum number of agents to return (default: 10, max: 12)
+    - prev: ID of the previous agent for pagination (optional)
 
-    **Returns:**
+    Returns:
     A list of agent objects with their basic information.
     """,
 )
@@ -55,12 +53,12 @@ async def get_agent_list(
     description="""
     Create a new agent in the system.
 
-    **Required fields:**
-    - **name**: Agent's display name
-    - **phone_number**: Unique phone number for the agent
-    - **is_active**: Whether the agent is active (true) or inactive (false, default)
+    Required fields:
+    - name: Agent's display name
+    - phone_number: Unique phone number for the agent
+    - is_active: Whether the agent is active (true) or inactive (false, default)
 
-    **Returns:**
+    Returns:
     The created agent's basic information.
     """,
 )
@@ -70,8 +68,7 @@ async def create_agent(
     agent_service: AgentService = Depends(Provide[Container.agent_service]),
 ) -> CreateAgentResponse:
     """Create a new agent with the provided information"""
-    command = CreateAgentCommand(**request.model_dump())
-    agent = await agent_service.create_agent(command=command)
+    agent = await agent_service.create_agent(request=request)
     return CreateAgentResponse(id=agent.id, name=agent.name, phone_number=agent.phone_number)
 
 
@@ -102,15 +99,15 @@ async def get_agent(
     description="""
     Update an existing agent's information.
 
-    **Path parameter:**
-    - **agent_id**: The ID of the agent to update
+    Path parameter:
+    - agent_id: The ID of the agent to update
 
-    **Request body:**
-    - **name**: Updated agent name (optional)
-    - **phone_number**: Updated phone number (optional)
-    - **is_active**: Updated active status (optional)
+    Request body:
+    - name: Updated agent name (optional)
+    - phone_number: Updated phone number (optional)
+    - is_active: Updated active status (optional)
 
-    **Returns:**
+    Returns:
     The updated agent's information.
     """,
 )
@@ -122,36 +119,7 @@ async def update_agent(
 ) -> AgentResponse:
     """Update an existing agent"""
     try:
-        # Get current agent to fill in missing fields
-        current_agent = await agent_service.get_agent_by_id(agent_id=agent_id)
-        if not current_agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        # Create command with current values as defaults for optional fields
-        command = UpdateAgentCommand(
-            agent_id=agent_id,
-            name=request.name if request.name is not None else current_agent.name,
-            phone_number=request.phone_number
-            if request.phone_number is not None
-            else current_agent.phone_number,
-            description=request.description
-            if request.description is not None
-            else current_agent.description,
-            instructions=request.instructions
-            if request.instructions is not None
-            else current_agent.instructions,
-            is_active=request.is_active
-            if request.is_active is not None
-            else current_agent.is_active,
-            llm_model=request.llm_model
-            if request.llm_model is not None
-            else current_agent.llm_model,
-            default_language=request.default_language
-            if request.default_language is not None
-            else current_agent.default_language,
-        )
-
-        updated_agent = await agent_service.update_agent(command=command)
+        updated_agent = await agent_service.update_agent(agent_id=agent_id, request=request)
         if not updated_agent:
             raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -175,10 +143,10 @@ async def update_agent(
     description="""
     Delete an agent and all related data (cascade delete).
 
-    **Path parameter:**
-    - **agent_id**: The ID of the agent to delete
+    Path parameter:
+    - agent_id: The ID of the agent to delete
 
-    **Note:** This operation will also delete all related:
+    Note: This operation will also delete all related:
     - Agent configurations
     - Prompts
     - Customers

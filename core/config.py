@@ -84,6 +84,28 @@ class Config(BaseSettings):
     REDIS_EVENT_HISTORY_TTL: int = 604800  # 7 days in seconds
     REDIS_EVENT_MAX_HISTORY: int = 10000
 
+    # Semantic Cache Configuration
+    CACHE_ENABLED: bool = True
+    CACHE_BACKEND: str = "redisvl"  # Backend type: redisvl, memory
+    CACHE_SIMILARITY_THRESHOLD: float = 0.85
+    CACHE_MAX_RESULTS: int = 5
+    CACHE_DEFAULT_TTL: int = 3600  # 1 hour in seconds
+    CACHE_EMBEDDING_PROVIDER: str = "openai"  # openai, sentence_transformers
+    CACHE_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    CACHE_REDIS_INDEX_NAME: str = "agent_cache_index"
+    CACHE_REDIS_KEY_PREFIX: str = "agent_cache:"
+
+    # RedisVL Vector Index Configuration
+    CACHE_VECTOR_DIMS: int = 1536  # Dimensions for text-embedding-3-small
+    CACHE_VECTOR_ALGORITHM: str = "HNSW"  # Vector algorithm
+    CACHE_VECTOR_DISTANCE_METRIC: str = "COSINE"  # Distance metric
+
+    # AI Provider Cache Integration
+    CACHE_AI_PROVIDERS_ENABLED: bool = True  # Enable cache integration with AI providers
+    CACHE_MIN_RESPONSE_LENGTH: int = 10  # Minimum response length to cache
+    CACHE_MIN_MESSAGE_LENGTH: int = 5  # Minimum message length to cache
+    CACHE_STREAMING_SUPPORT: bool = False  # Enable for streaming responses (future)
+
     @field_validator("OPENAI_API_KEY")
     @classmethod
     def validate_openai_key(cls, v):

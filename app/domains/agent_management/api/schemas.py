@@ -89,29 +89,3 @@ class CreateAgentResponse(BaseModel):
         if isinstance(v, uuid.UUID):
             return str(v)
         return v
-
-
-# Command Models (for internal use)
-class CreateAgentCommand(BaseModel):
-    """Internal command for agent creation"""
-
-    name: str
-    phone_number: str
-    description: str | None = None
-    instructions: list[str] | None = None
-    is_active: bool
-    llm_model: str | None = None
-    default_language: str | None = "pt-BR"
-
-
-class UpdateAgentCommand(BaseModel):
-    """Internal command for agent updates"""
-
-    agent_id: str
-    name: str
-    phone_number: str
-    description: str | None = None
-    instructions: list[str] | None = None
-    is_active: bool
-    llm_model: str | None = None
-    default_language: str | None = "pt-BR"

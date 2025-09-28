@@ -102,7 +102,7 @@ I've created a comprehensive integration test suite for the Agent CRUD operation
 ## Integration with Existing Codebase
 
 ### Follows Project Patterns
-- **Uses existing models**: Agent, CreateAgentCommand, UpdateAgentCommand
+- **Uses existing models**: Agent, CreateAgentRequest, UpdateAgentRequest
 - **Respects architecture**: Repository → Service → API layer separation
 - **Matches conventions**: Async/await patterns, dependency injection
 - **Integrates with events**: AgentEventPublisher integration

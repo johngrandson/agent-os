@@ -1,9 +1,10 @@
 import uuid
 
 from app.domains.agent_management.agent import Agent
-from app.domains.agent_management.api.schemas import CreateAgentCommand, UpdateAgentCommand
+from app.domains.agent_management.api.schemas import CreateAgentRequest, UpdateAgentRequest
 from app.domains.agent_management.events.publisher import AgentEventPublisher
 from app.domains.agent_management.repositories.agent_repository import AgentRepository
+from core.exceptions.domain import AgentAlreadyExists
 from infrastructure.database import Transactional
 
 
@@ -26,25 +27,26 @@ class AgentService:
         return await self.repository.get_agents(limit=limit, prev=prev)
 
     @Transactional()
-    async def create_agent(self, *, command: CreateAgentCommand) -> Agent:
+    async def create_agent(self, *, request: CreateAgentRequest) -> Agent:
         """Create a new agent"""
         existing_agent = await self.repository.get_agent_by_phone_number(
-            phone_number=command.phone_number
+            phone_number=request.phone_number
         )
         if existing_agent:
-            from core.exceptions.domain import AgentAlreadyExists
-
             raise AgentAlreadyExists
 
+        # Create agent model instance
         agent = Agent.create(
-            name=command.name,
-            phone_number=command.phone_number,
-            description=command.description,
-            instructions=command.instructions,
-            is_active=command.is_active,
-            default_language=command.default_language,
-            llm_model=command.llm_model,
+            name=request.name,
+            phone_number=request.phone_number,
+            description=request.description,
+            instructions=request.instructions,
+            is_active=request.is_active,
+            default_language=request.default_language,
+            llm_model=request.llm_model,
         )
+
+        # Create agent in database
         await self.repository.create_agent(agent=agent)
 
         # Publish agent creation event
@@ -70,31 +72,36 @@ class AgentService:
         return await self.repository.get_agent_by_id_with_relations(agent_id=agent_uuid)
 
     @Transactional()
-    async def update_agent(self, *, command: UpdateAgentCommand) -> Agent | None:
+    async def update_agent(self, *, agent_id: str, request: UpdateAgentRequest) -> Agent | None:
         """Update an existing agent"""
-        agent_uuid = uuid.UUID(command.agent_id)
+        agent_uuid = uuid.UUID(agent_id)
         agent = await self.repository.get_agent_by_id(agent_id=agent_uuid)
         if not agent:
             return None
 
         # Check if phone number is being changed and if new number already exists
-        if agent.phone_number != command.phone_number:
+        if request.phone_number is not None and agent.phone_number != request.phone_number:
             existing_agent = await self.repository.get_agent_by_phone_number(
-                phone_number=command.phone_number
+                phone_number=request.phone_number
             )
-            if existing_agent and str(existing_agent.id) != command.agent_id:
-                from core.exceptions.domain import AgentAlreadyExists
-
+            if existing_agent and str(existing_agent.id) != agent_id:
                 raise AgentAlreadyExists
 
-        # Update agent fields
-        agent.name = command.name
-        agent.phone_number = command.phone_number
-        agent.description = command.description
-        agent.instructions = command.instructions
-        agent.is_active = command.is_active
-        agent.llm_model = command.llm_model
-        agent.default_language = command.default_language
+        # Update agent fields (only update provided fields)
+        if request.name is not None:
+            agent.name = request.name
+        if request.phone_number is not None:
+            agent.phone_number = request.phone_number
+        if request.description is not None:
+            agent.description = request.description
+        if request.instructions is not None:
+            agent.instructions = request.instructions
+        if request.is_active is not None:
+            agent.is_active = request.is_active
+        if request.llm_model is not None:
+            agent.llm_model = request.llm_model
+        if request.default_language is not None:
+            agent.default_language = request.default_language
 
         await self.repository.update_agent(agent=agent)
 

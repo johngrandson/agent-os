@@ -23,16 +23,16 @@ webhook_router.tags = ["API Webhooks"]
     description="""
     Handle incoming WhatsApp webhook events using event-driven architecture.
 
-    **Supported events:**
-    - **message**: Incoming messages from WhatsApp
-    - **session.status**: Session status updates
+    Supported events:
+    - message: Incoming messages from WhatsApp
+    - session.status: Session status updates
 
-    **Required fields:**
-    - **event**: Event type
-    - **metadata**: Event metadata containing agent.id
-    - **payload**: Event payload data
+    Required fields:
+    - event: Event type
+    - metadata: Event metadata containing agent.id
+    - payload: Event payload data
 
-    **Returns:**
+    Returns:
     Success status
     """,
 )
