@@ -2,10 +2,10 @@
 Webhook Agent Processor - processes messages with request-time filtering and orchestration
 """
 
+from app.events.domains.messages.publisher import MessageEventPublisher
 from app.events.orchestration.publisher import OrchestrationEventPublisher
 from app.events.orchestration.task_registry import TaskRegistry
 from app.events.orchestration.task_state import TaskState, TaskStatus
-from app.events.webhooks.publisher import WebhookEventPublisher
 from core.logger import get_module_logger
 
 
@@ -18,7 +18,7 @@ class WebhookAgentProcessor:
     def __init__(
         self,
         agent_cache,
-        event_publisher: WebhookEventPublisher,
+        event_publisher: MessageEventPublisher,
         task_registry: TaskRegistry | None = None,
         orchestration_publisher: OrchestrationEventPublisher | None = None,
     ):

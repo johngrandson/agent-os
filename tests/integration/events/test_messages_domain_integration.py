@@ -21,19 +21,18 @@ class TestMessagesDomainIntegration:
         registered_router = event_registry.get_domain_router("messages")
         assert registered_router is message_router
 
-    def test_messages_domain_coexists_with_webhook_domain(self):
-        """Test that messages domain coexists with webhook domain"""
-        # Import both domains
+    def test_messages_domain_integrates_with_event_system(self):
+        """Test that messages domain integrates properly with the event system"""
+        # Import messages domain handlers
         from app.events.domains.messages import handlers as message_handlers  # noqa: F401
-        from app.events.webhooks import handlers as webhook_handlers  # noqa: F401
 
-        # Verify both routers are registered
+        # Verify messages router is registered
         message_router = event_registry.get_domain_router("messages")
-        webhook_router = event_registry.get_domain_router("webhook")
-
         assert message_router is not None
-        assert webhook_router is not None
-        assert message_router != webhook_router
+
+        # Verify messages domain is included in all registered domains
+        all_routers = event_registry.get_all_routers()
+        assert "messages" in all_routers
 
     def test_all_registered_domains_include_messages(self):
         """Test that messages domain appears in all registered domains"""

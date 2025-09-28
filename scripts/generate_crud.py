@@ -1444,11 +1444,11 @@ from app.events.{entity_name}.publisher import {entity_class}EventPublisher"""
 '''
 
     # Find event publisher insertion point
-    webhook_publisher = "webhook_event_publisher = providers.Singleton("
+    message_publisher = "message_event_publisher = providers.Singleton("
     publisher_insertion_point = content.find(webhook_publisher)
 
     if publisher_insertion_point != -1:
-        # Find the end of webhook_event_publisher block
+        # Find the end of message_event_publisher block
         publisher_end = content.find(')', publisher_insertion_point)
         publisher_end = content.find('\n', publisher_end) + 1
         content = content[:publisher_end] + event_publisher_code + content[publisher_end:]
@@ -1948,11 +1948,11 @@ from app.events.{entity_name}.publisher import {entity_class}EventPublisher"""
 '''
 
     # Find event publisher insertion point
-    webhook_publisher = "webhook_event_publisher = providers.Singleton("
+    message_publisher = "message_event_publisher = providers.Singleton("
     publisher_insertion_point = content.find(webhook_publisher)
 
     if publisher_insertion_point != -1:
-        # Find the end of webhook_event_publisher block
+        # Find the end of message_event_publisher block
         publisher_end = content.find(')', publisher_insertion_point)
         publisher_end = content.find('\n', publisher_end) + 1
         content = content[:publisher_end] + event_publisher_code + content[publisher_end:]

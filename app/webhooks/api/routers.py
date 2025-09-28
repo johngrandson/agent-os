@@ -1,7 +1,7 @@
 """WhatsApp webhook API routers"""
 
 from app.container import Container
-from app.events.webhooks.publisher import WebhookEventPublisher
+from app.events.domains.messages.publisher import MessageEventPublisher
 from app.webhooks.api.schemas import WebhookData
 from core.logger import get_module_logger
 from dependency_injector.wiring import Provide, inject
@@ -37,7 +37,7 @@ webhook_router = APIRouter()
 @inject
 async def handle_whatsapp_webhook(
     webhook_data: WebhookData,
-    webhook_publisher: WebhookEventPublisher = Depends(Provide[Container.webhook_event_publisher]),
+    message_publisher: MessageEventPublisher = Depends(Provide[Container.message_event_publisher]),
 ) -> dict[str, str]:
     """Lightweight webhook handler - validates and publishes events"""
     try:
@@ -51,13 +51,18 @@ async def handle_whatsapp_webhook(
 
         # Handle different event types
         if webhook_data.event == "message":
-            await webhook_publisher.message_received(
+            await message_publisher.message_received(
                 session_id, {"webhook_data": webhook_data_dict}
             )
         elif webhook_data.event == "session.status":
-            await webhook_publisher.session_status_changed(
+            # For session status events, we'll still use message_received but with different data
+            await message_publisher.message_received(
                 session_id,
-                {"status": webhook_data.payload, "webhook_data": webhook_data_dict},
+                {
+                    "event_type": "session_status",
+                    "status": webhook_data.payload,
+                    "webhook_data": webhook_data_dict,
+                },
             )
         else:
             logger.info(f"Unhandled event type: {webhook_data.event}")

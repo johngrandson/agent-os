@@ -2,11 +2,11 @@ import redis.asyncio as redis
 from app.agents.repositories.agent_repository import AgentRepository
 from app.agents.services.agent_service import AgentService
 from app.events.agents.publisher import AgentEventPublisher
+from app.events.domains.messages.publisher import MessageEventPublisher
 
 # Application imports
 from app.events.orchestration.publisher import OrchestrationEventPublisher
 from app.events.orchestration.task_registry import TaskRegistry
-from app.events.webhooks.publisher import WebhookEventPublisher
 from app.initialization import AgentCache
 
 # Provider imports
@@ -87,8 +87,8 @@ class Container(containers.DeclarativeContainer):
         broker=event_broker,
     )
 
-    webhook_event_publisher = providers.Singleton(
-        WebhookEventPublisher,
+    message_event_publisher = providers.Singleton(
+        MessageEventPublisher,
         broker=event_broker,
     )
 
@@ -127,7 +127,7 @@ class Container(containers.DeclarativeContainer):
     webhook_agent_processor = providers.Factory(
         WebhookAgentProcessor,
         agent_cache=agent_cache,
-        event_publisher=webhook_event_publisher,
+        event_publisher=message_event_publisher,
     )
 
 
