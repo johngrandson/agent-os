@@ -22,6 +22,7 @@ class Config(BaseSettings):
     POSTGRES_DB: str = "fastapi"
     POSTGRES_USER: str = "fastapi"
     POSTGRES_PASSWORD: str = "fastapi"
+    POSTGRES_SSL_MODE: str = ""
     WRITER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
     READER_DB_URL: str = "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
     AGNO_DB_URL: str = ""
@@ -70,6 +71,7 @@ class Config(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
     REDIS_URL: str = ""
+    REDIS_SSL: bool = False
     REDIS_MAX_CONNECTIONS: int = 20
     REDIS_CONNECTION_POOL_SIZE: int = 10
     REDIS_CONNECTION_TIMEOUT: int = 5
@@ -95,7 +97,13 @@ class Config(BaseSettings):
         """Construct database URL from components"""
         if self.WRITER_DB_URL:
             return self.WRITER_DB_URL
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+        base_url = f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+        # Add SSL mode if specified
+        if self.POSTGRES_SSL_MODE:
+            return f"{base_url}?sslmode={self.POSTGRES_SSL_MODE}"
+        return base_url
 
     @property
     def writer_db_url(self) -> str:
@@ -116,9 +124,13 @@ class Config(BaseSettings):
         """Construct Redis URL from components"""
         if self.REDIS_URL:
             return self.REDIS_URL
+
+        # Use rediss:// for SSL, redis:// for non-SSL
+        protocol = "rediss" if self.REDIS_SSL else "redis"
+
         if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            return f"{protocol}://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"{protocol}://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

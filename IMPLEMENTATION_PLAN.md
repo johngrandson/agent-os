@@ -36,7 +36,7 @@ Migrate from "webhook" to "messages" domain using business language instead of t
 - Test handlers receive and process events
 - Test router registration
 - Test integration with existing event system
-**Status**: Not Started
+**Status**: Complete
 
 ## Stage 4: MessageSent Event
 **Goal**: Add MessageSent event to complete basic message lifecycle
@@ -48,7 +48,7 @@ Migrate from "webhook" to "messages" domain using business language instead of t
 - Test MessageSent event creation and publishing
 - Test complete message lifecycle (received -> sent)
 - Test publisher handles multiple event types
-**Status**: Not Started
+**Status**: Complete
 
 ## Stage 5: Integration Testing
 **Goal**: Ensure new messages domain integrates properly with existing system
@@ -61,7 +61,7 @@ Migrate from "webhook" to "messages" domain using business language instead of t
 - End-to-end integration tests
 - Performance benchmarks
 - Regression tests for webhook domain
-**Status**: Not Started
+**Status**: Complete
 
 ## Notes
 - Keep webhook domain untouched during implementation
