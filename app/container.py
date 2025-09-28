@@ -1,15 +1,17 @@
 import redis.asyncio as redis
-from app.agents.repositories.agent_repository import AgentRepository
-from app.agents.services.agent_service import AgentService
-from app.events.domains.agents.publisher import AgentEventPublisher
-from app.events.domains.messages.publisher import MessageEventPublisher
+from app.domains.agent_management.events.publisher import AgentEventPublisher
+from app.domains.agent_management.repositories.agent_repository import AgentRepository
+from app.domains.agent_management.services.agent_service import AgentService
+from app.domains.communication.messages.publisher import MessageEventPublisher
+from app.domains.communication.webhooks.services.webhook_agent_processor import (
+    WebhookAgentProcessor,
+)
+
+# Provider imports
+from app.infrastructure.providers.factory import get_provider
 
 # Application imports
 from app.initialization import AgentCache
-
-# Provider imports
-from app.providers.factory import get_provider
-from app.webhooks.services.webhook_agent_processor import WebhookAgentProcessor
 
 # Core imports
 from core.config import get_config
@@ -73,9 +75,9 @@ class Container(containers.DeclarativeContainer):
 
     # Event broker - use a factory to return the singleton instance
     @providers.Factory
-    def event_broker() -> object:
+    def event_broker(self) -> object:
         """Return the singleton broker instance"""
-        from app.events.broker import broker
+        from app.shared.events.broker import broker
 
         return broker
 

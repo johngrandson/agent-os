@@ -4,8 +4,8 @@ import logging
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from app.events.domains.messages.events import MessageEventPayload
-from app.events.domains.messages.handlers import handle_message_received, handle_message_sent
+from app.domains.communication.messages.events import MessageEventPayload
+from app.domains.communication.messages.handlers import handle_message_received, handle_message_sent
 
 
 class TestMessageHandlers:

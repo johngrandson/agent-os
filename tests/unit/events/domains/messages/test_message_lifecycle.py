@@ -3,8 +3,8 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from app.events.domains.messages.events import MessageEvent
-from app.events.domains.messages.publisher import MessageEventPublisher
+from app.domains.communication.messages.events import MessageEvent
+from app.domains.communication.messages.publisher import MessageEventPublisher
 
 
 class TestMessageLifecycle:

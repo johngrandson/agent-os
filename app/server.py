@@ -1,10 +1,14 @@
 from typing import Any
 
-from app.agents.api.routers import agent_router
 from app.container import Container
-from app.events import faststream_app, setup_broker_with_handlers
+from app.domains.agent_management.api.routers import agent_router
+from app.domains.communication.webhooks.api.routers import webhook_router
 from app.initialization import initialize_database
-from app.webhooks.api.routers import webhook_router
+from app.shared.events import (
+    faststream_app,
+    register_all_domain_subscribers,
+    setup_broker_with_handlers,
+)
 from core.config import config
 from core.exceptions import CustomException
 from core.fastapi.dependencies import Logging
@@ -78,8 +82,8 @@ def setup_dependency_injection(container: Container) -> None:
     """Configure dependency injection"""
     container.wire(
         modules=[
-            "app.agents.api.routers",
-            "app.webhooks.api.routers",
+            "app.domains.agent_management.api.routers",
+            "app.domains.communication.webhooks.api.routers",
         ]
     )
 
@@ -89,6 +93,9 @@ def create_app() -> FastAPI:
     # Create container and setup DI
     container = Container()
     setup_dependency_injection(container)
+
+    # Register domain subscribers first
+    register_all_domain_subscribers()
 
     # Setup event broker with all registered handlers
     setup_broker_with_handlers()

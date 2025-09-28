@@ -51,7 +51,6 @@ services:
       - "8000:8000"
     volumes:
       - ../..:/app
-    user: "1000:1000"
     env_file:
       - ../../.env
     environment:
@@ -64,8 +63,7 @@ services:
         max-size: "10m"
         max-file: "3"
     command: >
-      sh -c "poetry install --no-root &&
-      poetry run uvicorn app.server:create_app
+      sh -c "poetry run uvicorn app.server:create_app
       --factory
       --host 0.0.0.0
       --port 8000

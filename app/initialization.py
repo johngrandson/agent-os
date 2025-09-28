@@ -6,8 +6,8 @@ Following CLAUDE.md: boring, direct, single responsibility
 from pathlib import Path
 from typing import Any
 
-from app.agents.agent import Agent
-from app.providers.base import AgentProvider, RuntimeAgent
+from app.domains.agent_management.agent import Agent
+from app.infrastructure.providers.base import AgentProvider, RuntimeAgent
 from core.logger import get_module_logger
 from dotenv import load_dotenv
 from infrastructure.database import Base

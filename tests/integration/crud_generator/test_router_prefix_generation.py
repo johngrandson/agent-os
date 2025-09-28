@@ -57,7 +57,9 @@ class TestRouterPrefixGeneration:
         when updating server.py with new router registrations.
         """
         # Create a mock server.py content
-        mock_server_content = '''from app.webhooks.api.routers import webhook_router
+        mock_server_content = '''from app.domains.communication.webhooks.api.routers import (
+    webhook_router,
+)
 
 def setup_routes(app: FastAPI):
     """Configure application routes"""
@@ -67,7 +69,7 @@ def setup_dependency_injection(container: Container):
     """Configure dependency injection"""
     container.wire(
         modules=[
-            "app.webhooks.api.routers",
+            "app.domains.communication.webhooks.api.routers",
         ]
     )
 '''
@@ -272,7 +274,7 @@ class TestEdgeCasesInRouterGeneration:
 # Test helper functions
 def create_test_server_content() -> str:
     """Create a mock server.py content for testing"""
-    return '''from app.webhooks.api.routers import webhook_router
+    return '''from app.domains.communication.webhooks.api.routers import webhook_router
 
 def setup_routes(app: FastAPI):
     """Configure application routes"""

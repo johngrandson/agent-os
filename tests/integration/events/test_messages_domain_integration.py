@@ -3,10 +3,10 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from app.events.broker import broker
-from app.events.core.registry import event_registry
-from app.events.domains.messages.publisher import MessageEventPublisher
-from app.events.domains.messages.subscribers import message_router
+from app.domains.communication.messages.publisher import MessageEventPublisher
+from app.domains.communication.messages.subscribers import message_router
+from app.shared.events.broker import broker
+from app.shared.events.registry import event_registry
 
 
 class TestMessagesDomainIntegration:
@@ -15,7 +15,7 @@ class TestMessagesDomainIntegration:
     def test_messages_router_is_registered_with_event_registry(self):
         """Test that messages router is properly registered"""
         # The subscriber import should have registered the router
-        from app.events.domains.messages import subscribers  # noqa: F401
+        from app.domains.communication.messages import subscribers  # noqa: F401
 
         # Verify the router is registered
         registered_router = event_registry.get_domain_router("messages")
@@ -24,7 +24,9 @@ class TestMessagesDomainIntegration:
     def test_messages_domain_integrates_with_event_system(self):
         """Test that messages domain integrates properly with the event system"""
         # Import messages domain subscribers
-        from app.events.domains.messages import subscribers as message_subscribers  # noqa: F401
+        from app.domains.communication.messages import (
+            subscribers as message_subscribers,  # noqa: F401
+        )
 
         # Verify messages router is registered
         message_router = event_registry.get_domain_router("messages")
@@ -37,7 +39,7 @@ class TestMessagesDomainIntegration:
     def test_all_registered_domains_include_messages(self):
         """Test that messages domain appears in all registered domains"""
         # Import subscribers to ensure registration
-        from app.events.domains.messages import subscribers  # noqa: F401
+        from app.domains.communication.messages import subscribers  # noqa: F401
 
         all_routers = event_registry.get_all_routers()
         domain_names = list(all_routers.keys())
@@ -95,11 +97,11 @@ class TestMessagesDomainIntegration:
 
     def test_messages_handlers_and_subscribers_exist_and_are_callable(self):
         """Test that message handlers and subscribers exist and can be imported"""
-        from app.events.domains.messages.handlers import (
+        from app.domains.communication.messages.handlers import (
             handle_message_received,
             handle_message_sent,
         )
-        from app.events.domains.messages.subscribers import (
+        from app.domains.communication.messages.subscribers import (
             message_received_subscriber,
             message_sent_subscriber,
         )
@@ -114,7 +116,7 @@ class TestMessagesDomainIntegration:
     def test_no_import_errors_with_messages_domain(self):
         """Test that importing messages domain doesn't cause errors"""
         # These imports should not raise any exceptions
-        from app.events.domains.messages import events, handlers, publisher, subscribers
+        from app.domains.communication.messages import events, handlers, publisher, subscribers
 
         # Verify key classes are available
         assert hasattr(events, "MessageEvent")
@@ -124,9 +126,9 @@ class TestMessagesDomainIntegration:
 
     def test_messages_domain_types_are_compatible(self):
         """Test that messages domain types are compatible with base types"""
-        from app.events.core.base import BaseEvent, BaseEventPublisher
-        from app.events.domains.messages.events import MessageEvent, MessageEventPayload
-        from app.events.domains.messages.publisher import MessageEventPublisher
+        from app.domains.communication.messages.events import MessageEvent, MessageEventPayload
+        from app.domains.communication.messages.publisher import MessageEventPublisher
+        from app.shared.events.base import BaseEvent, BaseEventPublisher
 
         # Test inheritance
         assert issubclass(MessageEvent, BaseEvent)

@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
-from app.agents.agent import Agent
-from app.agents.api.schemas import CreateAgentCommand, UpdateAgentCommand
-from app.agents.repositories.agent_repository import AgentRepository
-from app.agents.services.agent_service import AgentService
 from app.container import Container
-from app.events.domains.agents.publisher import AgentEventPublisher
+from app.domains.agent_management.agent import Agent
+from app.domains.agent_management.api.schemas import CreateAgentCommand, UpdateAgentCommand
+from app.domains.agent_management.events.publisher import AgentEventPublisher
+from app.domains.agent_management.repositories.agent_repository import AgentRepository
+from app.domains.agent_management.services.agent_service import AgentService
 from infrastructure.database import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -72,7 +72,7 @@ async def agent_repository(test_session) -> AgentRepository:
     context = set_session_context("test-session")
 
     # Mock the get_session to return our test session
-    import app.agents.repositories.agent_repository as repo_module
+    import app.domains.agent_management.repositories.agent_repository as repo_module
 
     original_get_session = repo_module.get_session
 

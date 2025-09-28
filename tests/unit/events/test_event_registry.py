@@ -3,7 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
-from app.events.core.registry import EventRegistry
+from app.shared.events.registry import EventRegistry
 from faststream.redis import RedisRouter
 
 
@@ -102,7 +102,7 @@ class TestEventRegistry:
         router3 = Mock(spec=RedisRouter)
 
         self.registry.register_domain_router("agent", router1)
-        self.registry.register_domain_router("orchestration", router2)
+        self.registry.register_domain_router("messages", router2)
         self.registry.register_domain_router("webhook", router3)
 
         # Act
@@ -119,16 +119,16 @@ class TestEventRegistry:
         """Test that the values from get_all_routers() are the actual router instances"""
         # Arrange
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         # Add unique attributes to identify each router
         agent_router.domain = "agent"
-        orchestration_router.domain = "orchestration"
+        messages_router.domain = "messages"
         webhook_router.domain = "webhook"
 
         self.registry.register_domain_router("agent", agent_router)
-        self.registry.register_domain_router("orchestration", orchestration_router)
+        self.registry.register_domain_router("messages", messages_router)
         self.registry.register_domain_router("webhook", webhook_router)
 
         # Act
@@ -136,11 +136,11 @@ class TestEventRegistry:
 
         # Assert
         domains_found = {router.domain for router in router_values}
-        assert domains_found == {"agent", "orchestration", "webhook"}
+        assert domains_found == {"agent", "messages", "webhook"}
 
         # Ensure these are the exact same objects we registered
         assert agent_router in router_values
-        assert orchestration_router in router_values
+        assert messages_router in router_values
         assert webhook_router in router_values
 
     def test_empty_registry_returns_empty_dict(self):
@@ -156,18 +156,18 @@ class TestEventRegistry:
         """Test registry with multiple domains like actual usage"""
         # Arrange - simulate the actual domains we have
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         # Act - register all domains
         self.registry.register_domain_router("agent", agent_router)
-        self.registry.register_domain_router("orchestration", orchestration_router)
+        self.registry.register_domain_router("messages", messages_router)
         self.registry.register_domain_router("webhook", webhook_router)
 
         # Assert - verify all are accessible
         assert len(self.registry.get_all_routers()) == 3
         assert self.registry.get_router("agent") is agent_router
-        assert self.registry.get_router("orchestration") is orchestration_router
+        assert self.registry.get_router("messages") is messages_router
         assert self.registry.get_router("webhook") is webhook_router
 
 

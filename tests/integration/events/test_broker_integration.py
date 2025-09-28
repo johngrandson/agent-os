@@ -3,8 +3,8 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from app.events.broker import setup_broker_with_handlers
-from app.events.core.registry import event_registry
+from app.shared.events.broker import setup_broker_with_handlers
+from app.shared.events.registry import event_registry
 from faststream.redis import RedisRouter
 
 
@@ -26,15 +26,15 @@ class TestBrokerRouterIntegration:
         event_registry._routers.clear()
 
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         event_registry.register_domain_router("agent", agent_router)
-        event_registry.register_domain_router("orchestration", orchestration_router)
+        event_registry.register_domain_router("messages", messages_router)
         event_registry.register_domain_router("webhook", webhook_router)
 
         # Mock the broker's include_router to track calls
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act
@@ -47,7 +47,7 @@ class TestBrokerRouterIntegration:
             # Verify all domain routers were included
             actual_calls = [call[0][0] for call in mock_broker.include_router.call_args_list]
             assert agent_router in actual_calls
-            assert orchestration_router in actual_calls
+            assert messages_router in actual_calls
             assert webhook_router in actual_calls
 
     def test_broker_setup_with_dynamic_router_registration(self):
@@ -55,7 +55,7 @@ class TestBrokerRouterIntegration:
         # Arrange - Start with empty registry
         event_registry._routers.clear()
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act 1 - Setup with no routers
@@ -86,7 +86,7 @@ class TestBrokerRouterIntegration:
 
         event_registry.register_domain_router("test_domain", old_router)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act 1 - Setup with old router
@@ -116,16 +116,16 @@ class TestBrokerRouterIntegration:
         event_registry._routers.clear()
 
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
 
         # Act
         event_registry.register_domain_router("agent", agent_router)
-        event_registry.register_domain_router("orchestration", orchestration_router)
+        event_registry.register_domain_router("messages", messages_router)
 
         # Assert
         assert event_registry.get_router("agent") is agent_router
-        assert event_registry.get_router("orchestration") is orchestration_router
-        assert event_registry.get_router("agent") is not orchestration_router
+        assert event_registry.get_router("messages") is messages_router
+        assert event_registry.get_router("agent") is not messages_router
 
     def test_multiple_broker_setups_are_idempotent(self):
         """Test that multiple calls to setup_broker_with_handlers work correctly"""
@@ -137,7 +137,7 @@ class TestBrokerRouterIntegration:
         event_registry.register_domain_router("domain1", router1)
         event_registry.register_domain_router("domain2", router2)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act - Call setup multiple times
@@ -172,7 +172,7 @@ class TestBrokerRegistryIntegration:
         test_router = Mock(spec=RedisRouter)
         event_registry.register_domain_router("test", test_router)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act
@@ -186,7 +186,7 @@ class TestBrokerRegistryIntegration:
         # Arrange
         event_registry._routers.clear()
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act 1 - Setup with empty registry
@@ -212,7 +212,7 @@ class TestBrokerRegistryIntegration:
 
         # Register multiple routers
         routers = {}
-        domains = ["agent", "orchestration", "webhook", "custom"]
+        domains = ["agent", "messages", "webhook", "custom"]
 
         for domain in domains:
             router = Mock(spec=RedisRouter)
@@ -220,7 +220,7 @@ class TestBrokerRegistryIntegration:
             routers[domain] = router
             event_registry.register_domain_router(domain, router)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act
@@ -268,7 +268,7 @@ class TestBrokerSetupErrorHandling:
         # This should NEVER happen in normal operation, but tests robustness
         event_registry._routers["corrupted"] = "this_is_a_string_not_a_router"
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
 
             def strict_include_router(router):
                 if isinstance(router, str):

@@ -64,8 +64,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && chmod -R 755 /app/app/domains/ \
     && chmod -R 755 /app/app/shared/ \
     && chmod -R 755 /app/app/infrastructure/ \
-    && chmod -R 755 /app/app/services/ \
-    && chmod -R 755 /app/app/events/
+    && chmod -R 755 /app/app/events/ \
+    && chmod -R 755 /app/core/
 
 USER appuser
 
@@ -91,8 +91,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && chmod -R 755 /app/app/domains/ \
     && chmod -R 755 /app/app/shared/ \
     && chmod -R 755 /app/app/infrastructure/ \
-    && chmod -R 755 /app/app/services/ \
-    && chmod -R 755 /app/app/events/
+    && chmod -R 755 /app/app/events/ \
+    && chmod -R 755 /app/core/
 
 USER appuser
 

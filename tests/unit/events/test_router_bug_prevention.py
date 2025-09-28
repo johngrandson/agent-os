@@ -3,8 +3,8 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from app.events.broker import setup_broker_with_handlers
-from app.events.core.registry import EventRegistry
+from app.shared.events.broker import setup_broker_with_handlers
+from app.shared.events.registry import EventRegistry
 from faststream.exceptions import SetupError
 from faststream.redis import RedisRouter
 
@@ -22,7 +22,7 @@ class TestRouterBugPrevention:
 
         # Register routers like the actual application
         registry.register_domain_router("agent", mock_router1)
-        registry.register_domain_router("orchestration", mock_router2)
+        registry.register_domain_router("messages", mock_router2)
         registry.register_domain_router("webhook", mock_router3)
 
         # Act - Get router values (this is what the fixed code does)
@@ -68,7 +68,7 @@ class TestRouterBugPrevention:
         # This test simulates what would happen if we passed strings to include_router
         # (This was the original error that led us to discover the bug)
 
-        from app.events.broker import broker
+        from app.shared.events.broker import broker
 
         # Act & Assert - Passing a string should cause an error
         with pytest.raises((TypeError, SetupError, AttributeError)):
@@ -76,7 +76,7 @@ class TestRouterBugPrevention:
             # "Router must be an instance of RedisRegistrator, got str instead"
             broker.include_router("this_is_a_string_not_a_router")
 
-    @patch("app.events.broker.event_registry")
+    @patch("app.shared.events.broker.event_registry")
     def test_setup_broker_with_fixed_iteration_pattern(self, mock_registry):
         """Test that setup_broker_with_handlers uses the fixed iteration pattern"""
         # Arrange - Create registry data that would expose the bug
@@ -86,7 +86,7 @@ class TestRouterBugPrevention:
         # This simulates the actual return value from get_all_routers()
         routers_dict = {
             "agent": mock_router1,  # Key is string (would cause bug if used)
-            "orchestration": mock_router2,  # Value is router object (correct)
+            "messages": mock_router2,  # Value is router object (correct)
         }
 
         mock_registry.get_all_routers.return_value = routers_dict
@@ -97,7 +97,7 @@ class TestRouterBugPrevention:
                 msg = f"Router must be an instance of RedisRouter, got str instead: {router}"
                 raise SetupError(msg)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock(side_effect=strict_include_router)
 
             # Act - This should work because we use .values(), not direct iteration
@@ -134,11 +134,11 @@ class TestRouterBugPrevention:
 
         # Add the same routers that exist in the real app
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         registry.register_domain_router("agent", agent_router)
-        registry.register_domain_router("orchestration", orchestration_router)
+        registry.register_domain_router("messages", messages_router)
         registry.register_domain_router("webhook", webhook_router)
 
         # Act - Get all routers (this is what setup_broker_with_handlers calls)
@@ -154,12 +154,12 @@ class TestRouterBugPrevention:
         # Old way gives strings (domain names) - THIS CAUSED THE BUG
         for item in old_way_iteration:
             assert isinstance(item, str)
-            assert item in ["agent", "orchestration", "webhook"]
+            assert item in ["agent", "messages", "webhook"]
 
         # New way gives router objects - THIS IS THE FIX
         for router in new_way_iteration:
             assert not isinstance(router, str)
-            assert router in [agent_router, orchestration_router, webhook_router]
+            assert router in [agent_router, messages_router, webhook_router]
 
     def test_all_domain_routers_are_objects_not_strings(self):
         """Test that all domain routers in the system are objects, not strings"""
@@ -170,7 +170,7 @@ class TestRouterBugPrevention:
         # Create mock routers for all known domains
         domains_and_routers = {
             "agent": Mock(spec=RedisRouter),
-            "orchestration": Mock(spec=RedisRouter),
+            "messages": Mock(spec=RedisRouter),
             "webhook": Mock(spec=RedisRouter),
         }
 
@@ -190,22 +190,22 @@ class TestRouterBugPrevention:
             # Each should be one of our mock routers
             assert router in domains_and_routers.values()
 
-    @patch("app.events.broker.event_registry")
+    @patch("app.shared.events.broker.event_registry")
     def test_setup_broker_prevents_string_router_error(self, mock_registry):
         """Final integration test: ensure setup_broker_with_handlers prevents the original error"""
         # Arrange - Set up the exact scenario that caused the original failure
         mock_agent_router = Mock(spec=RedisRouter)
-        mock_orchestration_router = Mock(spec=RedisRouter)
+        mock_messages_router = Mock(spec=RedisRouter)
         mock_webhook_router = Mock(spec=RedisRouter)
 
         mock_registry.get_all_routers.return_value = {
             "agent": mock_agent_router,
-            "orchestration": mock_orchestration_router,
+            "messages": mock_messages_router,
             "webhook": mock_webhook_router,
         }
 
         # Create a mock broker that simulates the original FastStream error
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
 
             def simulate_faststream_error(router):
                 if isinstance(router, str):
@@ -229,7 +229,7 @@ class TestRouterBugPrevention:
                     router_arg = call_args[0][0]
                     assert router_arg in [
                         mock_agent_router,
-                        mock_orchestration_router,
+                        mock_messages_router,
                         mock_webhook_router,
                     ]
 

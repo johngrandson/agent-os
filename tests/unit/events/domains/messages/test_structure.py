@@ -1,8 +1,8 @@
 """Test basic structure for messages domain"""
 
 import pytest
-from app.events.domains.messages.events import MessageEvent, MessageEventPayload
-from app.events.domains.messages.publisher import MessageEventPublisher
+from app.domains.communication.messages.events import MessageEvent, MessageEventPayload
+from app.domains.communication.messages.publisher import MessageEventPublisher
 
 
 class TestMessageStructure:
@@ -22,13 +22,13 @@ class TestMessageStructure:
 
     def test_message_event_inheritance(self) -> None:
         """Test that MessageEvent properly inherits from BaseEvent"""
-        from app.events.core.base import BaseEvent
+        from app.shared.events.base import BaseEvent
 
         assert issubclass(MessageEvent, BaseEvent)
 
     def test_message_publisher_inheritance(self) -> None:
         """Test that MessageEventPublisher properly inherits from BaseEventPublisher"""
-        from app.events.core.base import BaseEventPublisher
+        from app.shared.events.base import BaseEventPublisher
 
         assert issubclass(MessageEventPublisher, BaseEventPublisher)
 

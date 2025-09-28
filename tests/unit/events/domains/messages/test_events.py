@@ -1,7 +1,7 @@
 """Test message events"""
 
 import pytest
-from app.events.domains.messages.events import MessageEvent
+from app.domains.communication.messages.events import MessageEvent
 
 
 class TestMessageEvent:

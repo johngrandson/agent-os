@@ -7,8 +7,8 @@ for the Agent entity through the repository layer.
 import uuid
 
 import pytest
-from app.agents.agent import Agent
-from app.agents.repositories.agent_repository import AgentRepository
+from app.domains.agent_management.agent import Agent
+from app.domains.agent_management.repositories.agent_repository import AgentRepository
 
 
 @pytest.mark.asyncio

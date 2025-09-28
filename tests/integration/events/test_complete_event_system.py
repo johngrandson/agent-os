@@ -3,8 +3,8 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from app.events.broker import app, broker, setup_broker_with_handlers
-from app.events.core.registry import event_registry
+from app.shared.events.broker import app, broker, setup_broker_with_handlers
+from app.shared.events.registry import event_registry
 from faststream import FastStream
 from faststream.redis import RedisBroker, RedisRouter
 
@@ -27,15 +27,15 @@ class TestCompleteEventSystemSetup:
 
         # Add mock routers for all domains
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         event_registry.register_domain_router("agent", agent_router)
-        event_registry.register_domain_router("orchestration", orchestration_router)
+        event_registry.register_domain_router("messages", messages_router)
         event_registry.register_domain_router("webhook", webhook_router)
 
         # Mock external dependencies
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act - This should work end-to-end without errors
@@ -48,7 +48,7 @@ class TestCompleteEventSystemSetup:
             # Verify each domain router was properly registered
             included_routers = [call[0][0] for call in mock_broker.include_router.call_args_list]
             assert agent_router in included_routers
-            assert orchestration_router in included_routers
+            assert messages_router in included_routers
             assert webhook_router in included_routers
 
     def test_faststream_app_broker_integration(self):
@@ -61,7 +61,7 @@ class TestCompleteEventSystemSetup:
     def test_broker_configuration_with_redis_url(self):
         """Test that broker is configured with Redis URL from config"""
         # Since config is loaded at module level, we just verify it exists and has redis_url
-        from app.events.broker import config
+        from app.shared.events.broker import config
 
         # Assert
         assert config is not None
@@ -75,7 +75,7 @@ class TestCompleteEventSystemSetup:
         event_registry._routers.clear()
 
         # These are the domains we know exist from the grep search
-        known_domains = ["agent", "orchestration", "webhook"]
+        known_domains = ["agent", "messages", "webhook"]
         domain_routers = {}
 
         for domain in known_domains:
@@ -85,7 +85,7 @@ class TestCompleteEventSystemSetup:
             event_registry.register_domain_router(domain, router)
 
         # Mock the broker
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # Act
@@ -108,19 +108,19 @@ class TestCompleteEventSystemSetup:
 
         # Step 1: Domain handlers register their routers (simulating module imports)
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         # Simulate what happens in each domain's subscribers.py file
         event_registry.register_domain_router("agent", agent_router)
-        event_registry.register_domain_router("orchestration", orchestration_router)
+        event_registry.register_domain_router("messages", messages_router)
         event_registry.register_domain_router("webhook", webhook_router)
 
         # Step 2: Verify routers are registered
         assert len(event_registry.get_all_routers()) == 3
 
         # Step 3: Setup broker with all registered routers
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             result_broker = setup_broker_with_handlers()
@@ -135,7 +135,7 @@ class TestCompleteEventSystemSetup:
         event_registry._routers.clear()
 
         # Act
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             result = setup_broker_with_handlers()
@@ -154,7 +154,7 @@ class TestCompleteEventSystemSetup:
         event_registry.register_domain_router("agent", agent_router)
 
         # Act
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             result = setup_broker_with_handlers()
@@ -170,7 +170,7 @@ class TestCompleteEventSystemSetup:
         event_registry._routers.clear()
 
         routers = []
-        domains = ["webhook", "agent", "orchestration"]  # Different order
+        domains = ["webhook", "agent", "messages"]  # Different order
 
         for domain in domains:
             router = Mock(spec=RedisRouter)
@@ -179,7 +179,7 @@ class TestCompleteEventSystemSetup:
             event_registry.register_domain_router(domain, router)
 
         # Act
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             setup_broker_with_handlers()
@@ -204,16 +204,16 @@ class TestCompleteEventSystemSetup:
         # In real code: event_registry.register_domain_router("agent", agent_router)
         event_registry.register_domain_router("agent", agent_router)
 
-        # Simulate the pattern from app/events/orchestration/handlers.py
-        orchestration_router = Mock(spec=RedisRouter)
-        event_registry.register_domain_router("orchestration", orchestration_router)
+        # Simulate the pattern from app/domains/communication/messages/handlers.py
+        messages_router = Mock(spec=RedisRouter)
+        event_registry.register_domain_router("messages", messages_router)
 
         # Simulate the pattern from app/events/webhooks/handlers.py
         webhook_router = Mock(spec=RedisRouter)
         event_registry.register_domain_router("webhook", webhook_router)
 
         # Act - Use the actual broker setup function
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock()
 
             # This is the actual function call that was failing before the fix
@@ -226,9 +226,9 @@ class TestCompleteEventSystemSetup:
             for call_args in mock_broker.include_router.call_args_list:
                 router_arg = call_args[0][0]
                 assert not isinstance(router_arg, str)
-                assert router_arg in [agent_router, orchestration_router, webhook_router]
+                assert router_arg in [agent_router, messages_router, webhook_router]
 
-    @patch("app.events.broker.event_registry")
+    @patch("app.shared.events.broker.event_registry")
     def test_end_to_end_bug_prevention(self, mock_registry):
         """Final end-to-end test ensuring the string vs object bug cannot recur"""
         # Arrange - Set up the exact conditions that caused the original bug
@@ -236,11 +236,11 @@ class TestCompleteEventSystemSetup:
 
         # Register routers using the same pattern as production code
         agent_router = Mock(spec=RedisRouter)
-        orchestration_router = Mock(spec=RedisRouter)
+        messages_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
         real_registry.register_domain_router("agent", agent_router)
-        real_registry.register_domain_router("orchestration", orchestration_router)
+        real_registry.register_domain_router("messages", messages_router)
         real_registry.register_domain_router("webhook", webhook_router)
 
         # Use the actual registry's get_all_routers method
@@ -252,7 +252,7 @@ class TestCompleteEventSystemSetup:
                 msg = f"REGRESSION BUG: String passed to include_router: {router}"
                 raise TypeError(msg)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock(side_effect=fail_on_string_router)
 
             # Act - This should work without any errors
@@ -265,7 +265,7 @@ class TestCompleteEventSystemSetup:
             # Double-check: verify all arguments were router objects
             for call_args in mock_broker.include_router.call_args_list:
                 router_arg = call_args[0][0]
-                assert router_arg in [agent_router, orchestration_router, webhook_router]
+                assert router_arg in [agent_router, messages_router, webhook_router]
                 assert not isinstance(router_arg, str)
 
 
@@ -298,7 +298,7 @@ class TestEventSystemErrorRecovery:
                 msg = "Simulated router failure"
                 raise Exception(msg)
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock(side_effect=selective_failure)
 
             # Act & Assert - Should raise exception but we can test the pattern
@@ -322,7 +322,7 @@ class TestEventSystemErrorRecovery:
         # Save state before failure
         routers_before = event_registry.get_all_routers()
 
-        with patch("app.events.broker.broker") as mock_broker:
+        with patch("app.shared.events.broker.broker") as mock_broker:
             mock_broker.include_router = Mock(side_effect=Exception("Broker failure"))
 
             # Act
