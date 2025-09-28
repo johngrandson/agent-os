@@ -22,7 +22,7 @@ async def test_db_engine():
     """Create test database engine with PostgreSQL."""
     import os
 
-    # Use environment variables for database URL, fallback to local PostgreSQL
+    # Use environment variables for database URL
     database_url = (
         os.getenv("DATABASE_URL")
         or os.getenv("WRITER_DB_URL")
@@ -50,6 +50,8 @@ async def test_db_engine():
 @pytest_asyncio.fixture
 async def test_session(test_db_engine) -> AsyncGenerator[AsyncSession, None]:
     """Create test database session."""
+    import os
+
     session_factory = async_sessionmaker(
         bind=test_db_engine,
         class_=AsyncSession,

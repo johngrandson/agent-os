@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import UTC, datetime
+from typing import Any
 
 from app.events.broker import broker
 from app.events.core.registry import event_registry
@@ -20,7 +21,7 @@ webhook_router = RedisRouter()
 webhook_publisher = WebhookEventPublisher(broker=broker)
 
 
-async def _safe_reconstruct_webhook_data(webhook_data_dict: dict | None) -> WebhookData | None:
+def _safe_reconstruct_webhook_data(webhook_data_dict: dict | None) -> WebhookData | None:
     """Safely reconstruct WebhookData from dict with clear error handling"""
     if not webhook_data_dict or not isinstance(webhook_data_dict, dict):
         logger.error(f"Invalid webhook data dict: {type(webhook_data_dict)}")
@@ -33,7 +34,27 @@ async def _safe_reconstruct_webhook_data(webhook_data_dict: dict | None) -> Webh
         return None
 
 
-async def _setup_agent_processor(agent_id: str):
+async def _handle_processing_error(
+    session_id: str,
+    agent_id: str,
+    error: Exception | str,
+    webhook_data: WebhookData | None = None,
+    retry_count: int = 0,
+) -> None:
+    """Centralized error handling with fallback webhook data creation"""
+    error_msg = str(error)
+
+    if webhook_data is None:
+        # Create minimal webhook data for error reporting
+        payload = WebhookPayload.model_validate(
+            {"chat_id": "unknown", "body": "error", "sent_by_bot": False}
+        )
+        webhook_data = WebhookData(event="message", payload=payload, metadata=None)
+
+    await _publish_processing_failed(session_id, agent_id, error_msg, webhook_data, retry_count)
+
+
+async def _setup_agent_processor(agent_id: str) -> tuple[Any, Any]:
     """Setup agent processor and get agent configuration"""
     from app.container import Container
     from app.webhooks.services.webhook_agent_processor import WebhookAgentProcessor
@@ -77,7 +98,7 @@ async def _publish_ai_response(
 
 
 async def _publish_processing_failed(
-    session_id: str, agent_id: str, error: str, webhook_data: WebhookData
+    session_id: str, agent_id: str, error: str, webhook_data: WebhookData, retry_count: int = 0
 ):
     """Helper to publish processing failed events"""
     await webhook_publisher.processing_failed(
@@ -86,6 +107,7 @@ async def _publish_processing_failed(
             "agent_id": agent_id,
             "error": error,
             "webhook_data": webhook_data.model_dump(),
+            "retry_count": retry_count,
         },
     )
 
@@ -145,6 +167,7 @@ async def handle_message_received(data: WebhookEventPayload):
     logger.info(f"Webhook message received for session: {session_id}")
     logger.debug(f"Message data: {message_data}")
 
+    webhook_data = None
     try:
         # Extract webhook data from event
         webhook_data_dict = message_data.get("webhook_data")
@@ -153,7 +176,7 @@ async def handle_message_received(data: WebhookEventPayload):
             return
 
         # Reconstruct WebhookData from dict
-        webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
+        webhook_data = _safe_reconstruct_webhook_data(webhook_data_dict)
         if not webhook_data:
             return
 
@@ -168,23 +191,7 @@ async def handle_message_received(data: WebhookEventPayload):
 
     except Exception as e:
         logger.error(f"Error handling message received event: {e}")
-        # Create a minimal WebhookData for error reporting
-        try:
-            if "webhook_data" in locals() and webhook_data is not None:
-                await _publish_processing_failed(session_id, "unknown", str(e), webhook_data)
-            else:
-                # Create minimal webhook data from available data
-                minimal_payload = WebhookPayload.model_validate(
-                    {"from": "unknown", "body": str(message_data), "fromMe": False}
-                )
-                minimal_webhook_data = WebhookData(
-                    event="message", payload=minimal_payload, metadata=None
-                )
-                await _publish_processing_failed(
-                    session_id, "unknown", str(e), minimal_webhook_data
-                )
-        except Exception as nested_error:
-            logger.error(f"Failed to publish processing failure: {nested_error}")
+        await _handle_processing_error(session_id, "unknown", e, webhook_data)
 
 
 @webhook_router.subscriber("webhook.message_processed")
@@ -211,7 +218,7 @@ async def _attempt_message_retry(session_id: str, webhook_data_dict: dict, agent
     """Attempt to retry message processing. Returns True if successful."""
     try:
         # Reconstruct WebhookData for retry
-        webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
+        webhook_data = _safe_reconstruct_webhook_data(webhook_data_dict)
         if not webhook_data:
             logger.error(f"Cannot reconstruct webhook data for retry in session {session_id}")
             return False
@@ -221,16 +228,11 @@ async def _attempt_message_retry(session_id: str, webhook_data_dict: dict, agent
 
     except Exception as retry_error:
         logger.error(f"Retry failed for session {session_id}: {retry_error}")
-
-        # Report retry failure
-        failed_webhook_data = await _safe_reconstruct_webhook_data(webhook_data_dict)
-        if failed_webhook_data:
-            await _publish_processing_failed(
-                session_id,
-                agent_id,
-                f"Retry failed: {retry_error}",
-                failed_webhook_data,
-            )
+        # Use the webhook_data already reconstructed above, or create fallback
+        retry_webhook_data = _safe_reconstruct_webhook_data(webhook_data_dict)
+        await _handle_processing_error(
+            session_id, agent_id, f"Retry failed: {retry_error}", retry_webhook_data, 1
+        )
         return False
 
 
@@ -261,7 +263,7 @@ async def handle_processing_failed(data: WebhookEventPayload):
     retry_count = error_data.get("retry_count", 0)
 
     if retry_count < config.WEBHOOK_MAX_RETRIES:
-        # Exponential backoff
+        # Exponential backoff - schedule retry as background task
         retry_delay = 2**retry_count
         logger.info(
             f"Scheduling retry {retry_count + 1}/{config.WEBHOOK_MAX_RETRIES} "
@@ -269,10 +271,18 @@ async def handle_processing_failed(data: WebhookEventPayload):
             f"in {retry_delay}s"
         )
 
-        await asyncio.sleep(retry_delay)
-        await _attempt_message_retry(session_id, webhook_data_dict, agent_id)
+        # Schedule retry as background task to avoid blocking
+        asyncio.create_task(_delayed_retry(session_id, webhook_data_dict, agent_id, retry_delay))
     else:
         await _handle_max_retries_reached(session_id, agent_id, error_message)
+
+
+async def _delayed_retry(
+    session_id: str, webhook_data_dict: dict, agent_id: str, delay: int
+) -> None:
+    """Execute retry after delay without blocking the event loop"""
+    await asyncio.sleep(delay)
+    await _attempt_message_retry(session_id, webhook_data_dict, agent_id)
 
 
 @webhook_router.subscriber("webhook.ai_response_generated")

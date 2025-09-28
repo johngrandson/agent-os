@@ -125,7 +125,9 @@ class Config(BaseSettings):
 
 # Environment-specific overrides
 _env_overrides: dict[str, dict[str, str | int | bool]] = {
-    "test": {"DEBUG": False},
+    "test": {
+        "DEBUG": False,
+    },
     "e2e": {
         "DEBUG": False,
         "POSTGRES_HOST": "localhost",

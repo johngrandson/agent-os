@@ -21,7 +21,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
-          POSTGRES_DB: test_agent_os
+          POSTGRES_DB: fastapi
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -70,7 +70,8 @@ jobs:
 
       - name: Set up test environment variables
         run: |
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_agent_os" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fastapi" >> $GITHUB_ENV
+          echo "ENV=test" >> $GITHUB_ENV
           echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
           echo "ENVIRONMENT=test" >> $GITHUB_ENV
           echo "HUGGINGFACE_API_TOKEN=" >> $GITHUB_ENV
@@ -79,9 +80,10 @@ jobs:
         run: |
           poetry run alembic upgrade head
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_agent_os
-          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
-          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastapi
+          ENV: test
+          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fastapi
+          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fastapi
 
       - name: Run tests with coverage
         run: |
@@ -93,9 +95,10 @@ jobs:
             --junitxml=pytest.xml \
             -v
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
-          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
-          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_agent_os
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fastapi
+          ENV: test
+          WRITER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fastapi
+          READER_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fastapi
           REDIS_URL: redis://localhost:6379
           ENVIRONMENT: test
 

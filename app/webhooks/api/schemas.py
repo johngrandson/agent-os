@@ -8,11 +8,10 @@ class WebhookPayload(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    from_: str = Field(..., alias="from", title="Chat ID", description="Chat ID of the sender")
-    from_me: bool = Field(
+    chat_id: str = Field(..., alias="from", title="Chat ID", description="Chat ID of the sender")
+    sent_by_bot: bool = Field(
         default=False,
-        alias="fromMe",
-        title="From Me",
+        title="Sent By Bot",
         description="Whether message was sent by bot",
     )
     body: str = Field(..., title="Message Body", description="Message text content")
@@ -42,7 +41,7 @@ class WebhookData(BaseModel):
 
     def get_chat_id(self) -> str:
         """Get the chat ID from payload"""
-        return self.payload.from_
+        return self.payload.chat_id
 
     def get_message_body(self) -> str:
         """Get the message text content"""
@@ -54,7 +53,7 @@ class WebhookData(BaseModel):
 
     def is_from_bot(self) -> bool:
         """Check if message was sent by the bot"""
-        return self.payload.from_me
+        return self.payload.sent_by_bot
 
     def is_message_event(self) -> bool:
         """Check if this is a message event"""
