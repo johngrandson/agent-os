@@ -1,0 +1,1 @@
+"""Event domains tests package"""

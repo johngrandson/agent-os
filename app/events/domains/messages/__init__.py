@@ -1,0 +1,1 @@
+"""Messages domain package"""
