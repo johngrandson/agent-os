@@ -111,7 +111,7 @@ class TestCompleteEventSystemSetup:
         orchestration_router = Mock(spec=RedisRouter)
         webhook_router = Mock(spec=RedisRouter)
 
-        # Simulate what happens in each domain's handlers.py file
+        # Simulate what happens in each domain's subscribers.py file
         event_registry.register_domain_router("agent", agent_router)
         event_registry.register_domain_router("orchestration", orchestration_router)
         event_registry.register_domain_router("webhook", webhook_router)
@@ -199,7 +199,7 @@ class TestCompleteEventSystemSetup:
         # Arrange
         event_registry._routers.clear()
 
-        # Simulate the pattern from app/events/agents/handlers.py
+        # Simulate the pattern from app/events/agents/subscribers.py
         agent_router = Mock(spec=RedisRouter)
         # In real code: event_registry.register_domain_router("agent", agent_router)
         event_registry.register_domain_router("agent", agent_router)

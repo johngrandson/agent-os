@@ -1,20 +1,14 @@
-"""Agent event handlers"""
+"""Agent event handlers - Pure business logic"""
 
-from app.events.core.registry import event_registry
 from core.logger import get_module_logger
-from faststream.redis import RedisRouter
 
 from .events import AgentEventPayload
 
 
 logger = get_module_logger(__name__)
 
-# Create agent-specific router
-agent_router = RedisRouter()
 
-
-@agent_router.subscriber("agent.created")
-async def handle_agent_created(data: AgentEventPayload):
+async def handle_agent_created(data: AgentEventPayload) -> None:
     """Handle agent created events"""
     agent_id = data["entity_id"]
     agent_data = data["data"]
@@ -27,8 +21,7 @@ async def handle_agent_created(data: AgentEventPayload):
         logger.info(f"✅ HANDLER: Agent [{agent_short}] - CREATED")
 
 
-@agent_router.subscriber("agent.updated")
-async def handle_agent_updated(data: AgentEventPayload):
+async def handle_agent_updated(data: AgentEventPayload) -> None:
     """Handle agent updated events"""
     agent_id = data["entity_id"]
     agent_data = data["data"]
@@ -41,8 +34,7 @@ async def handle_agent_updated(data: AgentEventPayload):
         logger.info(f"🔄 HANDLER: Agent [{agent_short}] - UPDATED")
 
 
-@agent_router.subscriber("agent.deleted")
-async def handle_agent_deleted(data: AgentEventPayload):
+async def handle_agent_deleted(data: AgentEventPayload) -> None:
     """Handle agent deleted events"""
     agent_id = data["entity_id"]
     agent_short = agent_id[:8]
@@ -50,14 +42,9 @@ async def handle_agent_deleted(data: AgentEventPayload):
     logger.info(f"❌ HANDLER: Agent [{agent_short}] - DELETED")
 
 
-@agent_router.subscriber("agent.knowledge_created")
-async def handle_agent_knowledge_created(data: AgentEventPayload):
+async def handle_agent_knowledge_created(data: AgentEventPayload) -> None:
     """Handle agent knowledge created events"""
     agent_id = data["entity_id"]
     agent_short = agent_id[:8]
 
     logger.info(f"📚 HANDLER: Agent [{agent_short}] - KNOWLEDGE CREATED")
-
-
-# Register the router with the event registry
-event_registry.register_domain_router("agent", agent_router)

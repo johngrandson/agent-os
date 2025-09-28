@@ -1,4 +1,4 @@
-"""Messages domain package"""
+"""Agents domain package"""
 
 # Import subscribers to register routers
 from . import subscribers

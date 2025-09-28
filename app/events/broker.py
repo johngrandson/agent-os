@@ -16,7 +16,7 @@ broker = RedisBroker(config.redis_url, message_format=BinaryMessageFormatV1)
 app = FastStream(broker)
 
 
-def setup_broker_with_handlers():
+def setup_broker_with_handlers() -> RedisBroker:
     """Setup broker with all registered domain handlers"""
     # Include all registered routers in the broker
     for router in event_registry.get_all_routers().values():

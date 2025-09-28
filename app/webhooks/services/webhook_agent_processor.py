@@ -1,11 +1,10 @@
 """
-Webhook Agent Processor - processes messages with request-time filtering and orchestration
+Webhook Agent Processor - processes messages with request-time filtering
 """
 
+from typing import Any
+
 from app.events.domains.messages.publisher import MessageEventPublisher
-from app.events.orchestration.publisher import OrchestrationEventPublisher
-from app.events.orchestration.task_registry import TaskRegistry
-from app.events.orchestration.task_state import TaskState, TaskStatus
 from core.logger import get_module_logger
 
 
@@ -13,19 +12,15 @@ logger = get_module_logger(__name__)
 
 
 class WebhookAgentProcessor:
-    """Processes webhook messages using request-time agent selection with orchestration support"""
+    """Processes webhook messages using request-time agent selection"""
 
     def __init__(
         self,
-        agent_cache,
+        agent_cache: Any,
         event_publisher: MessageEventPublisher,
-        task_registry: TaskRegistry | None = None,
-        orchestration_publisher: OrchestrationEventPublisher | None = None,
-    ):
+    ) -> None:
         self.agent_cache = agent_cache
         self.event_publisher = event_publisher
-        self.task_registry = task_registry or TaskRegistry()
-        self.orchestration_publisher = orchestration_publisher
 
     def is_valid_for_webhook(self, agent_id: str) -> bool:
         """Check if agent is valid for webhook processing"""
@@ -83,12 +78,3 @@ class WebhookAgentProcessor:
         except Exception as e:
             logger.error(f"Error processing message with agent {agent_id}: {e}")
             return None
-
-    def get_task_status(self, task_id: str) -> TaskStatus | None:
-        """Get the status of an orchestration task"""
-        task = self.task_registry.get_task(task_id)
-        return task.status if task else None
-
-    def get_ready_tasks(self) -> list[TaskState]:
-        """Get all ready tasks for processing"""
-        return self.task_registry.get_ready_tasks()

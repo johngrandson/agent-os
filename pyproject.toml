@@ -162,18 +162,22 @@ docstring-code-line-length = 72
 python_version = "3.11"
 warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = false
-disallow_untyped_decorators = false
+
+# STRICT TYPE CHECKING - require types for all functions
+disallow_untyped_defs = true          # All functions must have type annotations
+disallow_incomplete_defs = true       # Functions with some type annotations must have complete annotations
+check_untyped_defs = true            # Check function bodies even if no type annotations
+disallow_untyped_decorators = false   # Keep lenient for decorators (FastAPI, etc.)
+
+# Type checking improvements
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = false
-warn_no_return = false
-warn_unreachable = false
-strict_equality = false
+warn_no_return = true                # Warn if function should return None but doesn't
+warn_unreachable = true              # Warn about unreachable code
+strict_equality = true               # Use strict equality checks
 
-# Allow dynamic typing for now
+# Keep current practices for third-party libraries
 ignore_missing_imports = true
 
 # Fix duplicate module names issue - proper solution

@@ -1,9 +1,7 @@
-"""Message event handlers"""
+"""Message event handlers - Pure business logic"""
 
 from app.events.broker import broker
-from app.events.core.registry import event_registry
 from core.logger import get_module_logger
-from faststream.redis import RedisRouter
 
 from .events import MessageEventPayload
 from .publisher import MessageEventPublisher
@@ -11,8 +9,7 @@ from .publisher import MessageEventPublisher
 
 logger = get_module_logger(__name__)
 
-# Create message-specific router and publisher
-message_router = RedisRouter()
+# Create message publisher for use in handlers if needed
 message_publisher = MessageEventPublisher(broker=broker)
 
 
@@ -65,20 +62,3 @@ async def handle_message_sent(data: MessageEventPayload) -> None:
         logger.debug(f"Message sent to chat: {chat_id}")
     if delivery_status:
         logger.debug(f"Delivery status: {delivery_status}")
-
-
-# Register message handlers with router
-@message_router.subscriber("messages.message_received")
-async def message_received_subscriber(data: MessageEventPayload):
-    """Message received event subscriber"""
-    await handle_message_received(data)
-
-
-@message_router.subscriber("messages.message_sent")
-async def message_sent_subscriber(data: MessageEventPayload):
-    """Message sent event subscriber"""
-    await handle_message_sent(data)
-
-
-# Register the router with the event registry
-event_registry.register_domain_router("messages", message_router)

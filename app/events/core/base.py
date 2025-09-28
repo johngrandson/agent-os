@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from core.logger import get_module_logger
+from faststream.redis import RedisBroker
 
 
 logger = get_module_logger(__name__)
@@ -30,7 +31,7 @@ class EventPublisher(Protocol):
 class BaseEventPublisher(ABC):
     """Abstract base class for domain-specific event publishers"""
 
-    def __init__(self, broker) -> None:
+    def __init__(self, broker: RedisBroker) -> None:
         self.broker = broker
         self.logger = get_module_logger(f"{__name__}.{self.__class__.__name__}")
 

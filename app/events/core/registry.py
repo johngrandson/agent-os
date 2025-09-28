@@ -12,7 +12,7 @@ logger = get_module_logger(__name__)
 class EventRegistry:
     """Registry for managing event handlers across different domains"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._routers: dict[str, RedisRouter] = {}
         self._handlers: dict[str, list[Callable]] = {}
 

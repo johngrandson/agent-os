@@ -23,6 +23,7 @@ help: ## Show this help message
 	@echo "  make dev           - Start development server with auto-reload"
 	@echo "  make test          - Run all tests"
 	@echo "  make lint          - Run code linting"
+	@echo "  make type-check    - Run type checking"
 	@echo "  make format        - Format code"
 	@echo ""
 	@echo "🗃️  Database:"
@@ -55,6 +56,10 @@ test: ## Run tests
 lint: ## Run code linting
 	@echo "🔍 Running linter..."
 	$(PYTHON) -m ruff check .
+
+type-check: ## Run type checking
+	@echo "🔍 Running type checking..."
+	$(PYTHON) -m mypy app/ --ignore-missing-imports --explicit-package-bases
 
 format: ## Format code
 	@echo "🎨 Formatting code..."

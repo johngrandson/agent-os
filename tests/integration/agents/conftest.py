@@ -12,7 +12,7 @@ from app.agents.api.schemas import CreateAgentCommand, UpdateAgentCommand
 from app.agents.repositories.agent_repository import AgentRepository
 from app.agents.services.agent_service import AgentService
 from app.container import Container
-from app.events.agents.publisher import AgentEventPublisher
+from app.events.domains.agents.publisher import AgentEventPublisher
 from infrastructure.database import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 

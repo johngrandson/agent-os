@@ -1,12 +1,10 @@
 import redis.asyncio as redis
 from app.agents.repositories.agent_repository import AgentRepository
 from app.agents.services.agent_service import AgentService
-from app.events.agents.publisher import AgentEventPublisher
+from app.events.domains.agents.publisher import AgentEventPublisher
 from app.events.domains.messages.publisher import MessageEventPublisher
 
 # Application imports
-from app.events.orchestration.publisher import OrchestrationEventPublisher
-from app.events.orchestration.task_registry import TaskRegistry
 from app.initialization import AgentCache
 
 # Provider imports
@@ -75,7 +73,7 @@ class Container(containers.DeclarativeContainer):
 
     # Event broker - use a factory to return the singleton instance
     @providers.Factory
-    def event_broker():
+    def event_broker() -> object:
         """Return the singleton broker instance"""
         from app.events.broker import broker
 
@@ -92,11 +90,6 @@ class Container(containers.DeclarativeContainer):
         broker=event_broker,
     )
 
-    orchestration_event_publisher = providers.Singleton(
-        OrchestrationEventPublisher,
-        broker=event_broker,
-    )
-
     # OpenAI client
     openai_client = providers.Singleton(AsyncOpenAI)
 
@@ -105,9 +98,6 @@ class Container(containers.DeclarativeContainer):
 
     # Repositories
     agent_repository = providers.Factory(AgentRepository)
-
-    # Orchestration components
-    task_registry = providers.Singleton(TaskRegistry)
 
     # Services
     agent_service = providers.Singleton(

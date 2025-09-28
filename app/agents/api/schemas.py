@@ -1,6 +1,7 @@
 """Agent API schemas - consolidated request/response models"""
 
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -43,7 +44,7 @@ class PromptResponse(BaseModel):
 
     @field_validator("agent_id", mode="before")
     @classmethod
-    def validate_agent_id(cls, v):
+    def validate_agent_id(cls, v: Any) -> str:
         """Convert UUID to string"""
         if isinstance(v, uuid.UUID):
             return str(v)
@@ -67,7 +68,7 @@ class AgentResponse(BaseModel):
 
     @field_validator("id", mode="before")
     @classmethod
-    def validate_id(cls, v):
+    def validate_id(cls, v: Any) -> str:
         """Convert UUID to string"""
         if isinstance(v, uuid.UUID):
             return str(v)
@@ -83,7 +84,7 @@ class CreateAgentResponse(BaseModel):
 
     @field_validator("id", mode="before")
     @classmethod
-    def validate_id(cls, v):
+    def validate_id(cls, v: Any) -> str:
         """Convert UUID to string"""
         if isinstance(v, uuid.UUID):
             return str(v)

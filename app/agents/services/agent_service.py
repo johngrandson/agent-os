@@ -3,7 +3,7 @@ import uuid
 from app.agents.agent import Agent
 from app.agents.api.schemas import CreateAgentCommand, UpdateAgentCommand
 from app.agents.repositories.agent_repository import AgentRepository
-from app.events.agents.publisher import AgentEventPublisher
+from app.events.domains.agents.publisher import AgentEventPublisher
 from infrastructure.database import Transactional
 
 

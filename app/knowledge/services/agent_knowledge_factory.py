@@ -3,7 +3,9 @@ Agent Knowledge Factory
 Creates shared knowledge base with agent-specific metadata filtering
 """
 
-from app.events.agents.publisher import AgentEventPublisher
+from typing import Any
+
+from app.events.domains.agents.publisher import AgentEventPublisher
 from core.logger import get_module_logger
 
 
@@ -21,11 +23,11 @@ class AgentKnowledgeFactory:
         self,
         agent_id: str,
         agent_name: str,
-    ):
+    ) -> Any:
         """Create shared knowledge base with agent-specific metadata filtering"""
         return await self._create_shared_knowledge(agent_id, agent_name)
 
-    async def _create_shared_knowledge(self, agent_id: str, agent_name: str):
+    async def _create_shared_knowledge(self, agent_id: str, agent_name: str) -> Any:
         """Create shared knowledge base for agent"""
         from agno.db.postgres.postgres import PostgresDb
         from agno.knowledge.embedder.openai import OpenAIEmbedder

@@ -11,7 +11,7 @@ class AgentEventPublisher(BaseEventPublisher):
     """Publisher for agent domain events"""
 
     def get_domain_prefix(self) -> str:
-        return "agent"
+        return "agents"
 
     async def agent_created(self, agent_id: str, agent_data: dict[str, Any]) -> None:
         """Publish agent created event"""

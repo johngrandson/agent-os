@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.agents.api.routers import agent_router
 from app.container import Container
 from app.events import faststream_app, setup_broker_with_handlers
@@ -25,7 +27,7 @@ configure_logging(debug=config.DEBUG)
 logger = get_module_logger(__name__)
 
 
-def create_middlewares():
+def create_middlewares() -> list[Middleware]:
     """Configure application middlewares"""
     return [
         Middleware(
@@ -44,22 +46,22 @@ def create_middlewares():
     ]
 
 
-def setup_exception_handlers(app: FastAPI):
+def setup_exception_handlers(app: FastAPI) -> None:
     """Configure application exception handlers"""
 
     @app.exception_handler(CustomException)
-    async def custom_exception_handler(request: Request, exc: CustomException):
+    async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
         return JSONResponse(
             status_code=exc.code,
             content={"error_code": exc.error_code, "message": exc.message},
         )
 
 
-def setup_routes(app: FastAPI):
+def setup_routes(app: FastAPI) -> None:
     """Configure application routes"""
 
     @app.get("/api/v1/health")
-    async def health_check():
+    async def health_check() -> dict[str, Any]:
         """Basic health check endpoint"""
         return {
             "status": "healthy",
@@ -72,7 +74,7 @@ def setup_routes(app: FastAPI):
     app.include_router(webhook_router, prefix="/api/v1/webhook")
 
 
-def setup_dependency_injection(container: Container):
+def setup_dependency_injection(container: Container) -> None:
     """Configure dependency injection"""
     container.wire(
         modules=[
@@ -110,7 +112,7 @@ def create_app() -> FastAPI:
 
     # Setup startup event
     @app.on_event("startup")
-    async def initialize_on_startup():
+    async def initialize_on_startup() -> None:
         # Initialize database (simple function call)
         await initialize_database()
 
@@ -135,7 +137,7 @@ def create_app() -> FastAPI:
 
     # Setup shutdown event
     @app.on_event("shutdown")
-    async def cleanup_on_shutdown():
+    async def cleanup_on_shutdown() -> None:
         # Stop the FastStream application
         try:
             await faststream_app.stop()

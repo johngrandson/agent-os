@@ -4,6 +4,7 @@ Following CLAUDE.md: boring, direct, single responsibility
 """
 
 from pathlib import Path
+from typing import Any
 
 from app.agents.agent import Agent
 from app.providers.base import AgentProvider, RuntimeAgent
@@ -19,13 +20,13 @@ logger = get_module_logger(__name__)
 class AgentCache:
     """Simple agent cache for storage and lookup"""
 
-    def __init__(self, agent_repository, agent_provider: AgentProvider):
+    def __init__(self, agent_repository: Any, agent_provider: AgentProvider) -> None:
         self.agent_repository = agent_repository
         self.agent_provider = agent_provider
         self._loaded_agents: list[Agent] = []
         self._runtime_agents: list[RuntimeAgent] = []
 
-    async def load_all_agents(self):
+    async def load_all_agents(self) -> tuple[list[Agent], list[RuntimeAgent]]:
         """Load all active agents from database"""
         logger.info("Loading all active agents from database...")
         db_agents = await self.agent_repository.get_agents_by_status(status=True)
@@ -64,7 +65,7 @@ class AgentCache:
         return len(self._runtime_agents) > 0
 
 
-async def initialize_database():
+async def initialize_database() -> None:
     """Initialize database tables - direct and simple"""
     _ensure_environment_loaded()
 
@@ -77,7 +78,7 @@ async def initialize_database():
         raise
 
 
-def _ensure_environment_loaded():
+def _ensure_environment_loaded() -> None:
     """Ensure environment variables are loaded with local override"""
     if Path(".env.local").exists():
         load_dotenv(".env.local", override=True)
