@@ -105,7 +105,7 @@ class AgnoDatabaseFactory:
         try:
             with AgnoDatabaseFactory._instance_lock:
                 if AgnoDatabaseFactory._postgres_db_cache is not None:
-                    return AgnoDatabaseFactory._postgres_db_cache
+                    return AgnoDatabaseFactory._postgres_db_cache  # type: ignore[unreachable]
 
                 db_url = AgnoDatabaseFactory._get_postgres_db_url()
                 # Mask credentials in logging
