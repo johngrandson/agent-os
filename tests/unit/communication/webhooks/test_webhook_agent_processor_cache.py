@@ -76,7 +76,7 @@ def mock_cache_service():
 def mock_config():
     """Create a mock config."""
     config = MagicMock(spec=Config)
-    config.WEBHOOK_ALLOWED_NUMBER = None  # No number restriction by default
+    config.allowed_whatsapp_numbers = []  # No number restriction by default
     return config
 
 

@@ -79,7 +79,7 @@ def mock_cache_service():
 def config_with_allowed_number():
     """Create config with specific allowed number."""
     config = MagicMock(spec=Config)
-    config.WEBHOOK_ALLOWED_NUMBER = "5511999998888"
+    config.allowed_whatsapp_numbers = ["5511999998888"]
     return config
 
 
@@ -87,7 +87,7 @@ def config_with_allowed_number():
 def config_without_allowed_number():
     """Create config without specific allowed number."""
     config = MagicMock(spec=Config)
-    config.WEBHOOK_ALLOWED_NUMBER = None
+    config.allowed_whatsapp_numbers = []
     return config
 
 

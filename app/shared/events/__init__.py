@@ -5,7 +5,7 @@ from .broker import app as faststream_app, broker, setup_broker_with_handlers
 from .registry import EventRegistry
 
 
-def register_all_domain_subscribers():
+def register_all_domain_subscribers() -> None:
     """Register all domain subscribers with the event system"""
     # Import here to avoid circular imports
     import app.domains.agent_management.events.subscribers  # noqa: F401

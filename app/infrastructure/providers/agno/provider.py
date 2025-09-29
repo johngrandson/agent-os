@@ -233,7 +233,7 @@ class AgnoRuntimeAgent(RuntimeAgent):
         # Run agno agent in thread pool to avoid async/sync conflicts
         loop = asyncio.get_event_loop()
 
-        def run_agent_sync():
+        def run_agent_sync() -> Any:
             """Run the agent synchronously in a separate thread"""
             # Use sync run method to avoid greenlet issues
             return self._agno_agent.run(input=message)
@@ -245,10 +245,11 @@ class AgnoRuntimeAgent(RuntimeAgent):
 
             # Handle different return types from agno - get content as string
             if hasattr(result, "content"):
-                return result.content
+                content = result.content
+                return str(content) if content is not None else ""
             if isinstance(result, str):
                 return result
-            return str(result)
+            return str(result) if result is not None else ""
 
         except Exception as e:
             logger.error(f"Error running agent {self.name}: {e}")
@@ -256,21 +257,24 @@ class AgnoRuntimeAgent(RuntimeAgent):
             try:
                 result = await self._agno_agent.arun(input=message)
                 if hasattr(result, "content"):
-                    return result.content
+                    content = result.content
+                    return str(content) if content is not None else ""
                 if isinstance(result, str):
                     return result
-                return str(result)
+                return str(result) if result is not None else ""
             except Exception as fallback_error:
                 logger.error(f"Fallback also failed for agent {self.name}: {fallback_error}")
                 return f"Error: Agent {self.name} encountered an issue processing the request."
 
     @property
     def id(self) -> str:
-        return self._agno_agent.id
+        agent_id = self._agno_agent.id
+        return agent_id if agent_id is not None else ""
 
     @property
     def name(self) -> str:
-        return self._agno_agent.name
+        agent_name = self._agno_agent.name
+        return agent_name if agent_name is not None else ""
 
     def get_agno_agent(self) -> AgnoAgent:
         """Access to underlying agno agent for backwards compatibility"""
@@ -283,17 +287,24 @@ class AgnoProvider(AgentProvider):
     Wraps existing AgnoAgentConverter and AgentOS functionality.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Import here to avoid circular import
         from app.infrastructure.providers.agno.converter import AgnoAgentConverter
 
         # Create required dependencies
         config = get_config()
 
+        # Create a mock event publisher for factory initialization
+        from unittest.mock import MagicMock
+
+        from app.domains.agent_management.events.publisher import AgentEventPublisher
+
+        mock_event_publisher = MagicMock(spec=AgentEventPublisher)
+
         # Create knowledge factory directly
         knowledge_factory = AgentKnowledgeFactory(
             db_url=config.AGNO_DB_URL,
-            event_publisher=None,  # Not needed for basic functionality
+            event_publisher=mock_event_publisher,
         )
 
         # Create model factory
@@ -309,7 +320,9 @@ class AgnoProvider(AgentProvider):
         logger.info(f"Converting {len(db_agents)} agents for webhook via AgnoProvider")
 
         agno_agents = await self.agno_agent_converter.convert_agents_for_webhook(db_agents)
-        runtime_agents = [AgnoRuntimeAgent(agno_agent) for agno_agent in agno_agents]
+        runtime_agents: list[RuntimeAgent] = [
+            AgnoRuntimeAgent(agno_agent) for agno_agent in agno_agents
+        ]
 
         logger.info(f"Successfully converted {len(runtime_agents)} webhook agents")
         return runtime_agents
@@ -319,7 +332,9 @@ class AgnoProvider(AgentProvider):
         logger.info(f"Converting {len(db_agents)} agents for runtime via AgnoProvider")
 
         agno_agents = await self.agno_agent_converter.convert_agents_for_agent_os(db_agents)
-        runtime_agents = [AgnoRuntimeAgent(agno_agent) for agno_agent in agno_agents]
+        runtime_agents: list[RuntimeAgent] = [
+            AgnoRuntimeAgent(agno_agent) for agno_agent in agno_agents
+        ]
 
         logger.info(f"Successfully converted {len(runtime_agents)} runtime agents")
         return runtime_agents
