@@ -94,10 +94,8 @@ def create_app() -> FastAPI:
     container = Container()
     setup_dependency_injection(container)
 
-    # Register domain subscribers first
+    # Event system still available for other domains (agent management, etc.)
     register_all_domain_subscribers()
-
-    # Setup event broker with all registered handlers
     setup_broker_with_handlers()
 
     # Get agent cache and provider from container
@@ -131,6 +129,9 @@ def create_app() -> FastAPI:
             logger.error(f"❌ EVENTS: FastStream failed - {e}")
             # Don't raise here to allow app to start, but log the issue
             # This ensures the API is still functional even if events fail
+
+        # Dependencies are now injected directly in routes - no global state needed
+        logger.info("🔗 WEBHOOK: Using direct dependency injection (simplified)")
 
         # Load all agents once (now includes cache wrapping if enabled)
         db_agents, runtime_agents = await agent_cache.load_all_agents()

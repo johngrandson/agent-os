@@ -1,9 +1,10 @@
-"""Pytest configuration and fixtures for pluralization TDD tests
+"""Pytest configuration and fixtures for agent-os tests
 
-This file contains shared test fixtures and configuration for the
-test-driven development of the pluralization fix.
+This file contains shared test fixtures and configuration for all tests,
+including test database isolation and environment setup.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -13,6 +14,37 @@ import pytest
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Automatically setup test environment for all tests."""
+    # Ensure we're using test database URLs
+    test_db_path = project_root / "test.db"
+    test_db_url = f"sqlite+aiosqlite:///{test_db_path}"
+
+    # Override environment variables to ensure test isolation
+    os.environ["ENV"] = "test"
+    os.environ["DATABASE_URL"] = test_db_url
+    os.environ["WRITER_DB_URL"] = test_db_url
+    os.environ["READER_DB_URL"] = test_db_url
+
+    # Also disable any cache or external services in tests
+    os.environ["CACHE_ENABLED"] = "false"
+    os.environ["CACHE_AI_PROVIDERS_ENABLED"] = "false"
+
+    yield
+
+    # Cleanup: Remove test database after all tests
+    if test_db_path.exists():
+        test_db_path.unlink()
+
+
+@pytest.fixture(autouse=True)
+def ensure_test_isolation():
+    """Ensure each test runs in isolation."""
+    # This fixture runs before each test to ensure clean state
+    yield
 
 
 @pytest.fixture
@@ -115,8 +147,13 @@ pytest_plugins: list[str] = []
 def pytest_configure(config):
     """Configure custom pytest markers"""
     config.addinivalue_line("markers", "unit: Unit tests for individual functions")
-    config.addinivalue_line("markers", "integration: Integration tests for CLI generator")
+    config.addinivalue_line("markers", "integration: Integration tests")
     config.addinivalue_line("markers", "api: API endpoint tests")
+    config.addinivalue_line("markers", "database: Tests requiring database access")
+    config.addinivalue_line("markers", "cache: Tests related to caching functionality")
+    config.addinivalue_line("markers", "agent_repository: Tests for agent repository layer")
+    config.addinivalue_line("markers", "agent_service: Tests for agent service layer")
+    config.addinivalue_line("markers", "webhook: Tests for webhook handlers and events")
     config.addinivalue_line("markers", "pluralization: Tests related to pluralization logic")
     config.addinivalue_line("markers", "failing: Tests that demonstrate current bugs (should fail)")
     config.addinivalue_line("markers", "compound_words: Tests for compound word pluralization")

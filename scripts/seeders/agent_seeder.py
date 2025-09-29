@@ -16,7 +16,7 @@ sys.path.insert(0, str(root_dir))
 from app.container import Container
 from app.domains.agent_management.agent import Agent
 from app.domains.agent_management.api.schemas import CreateAgentRequest
-from infrastructure.database import Base, EngineType, engines
+from infrastructure.database import Base
 from infrastructure.database.session import reset_session_context, set_session_context
 
 
@@ -40,8 +40,17 @@ class AgentSeeder:
 
     async def create_tables(self):
         """Criar tabelas se não existirem"""
-        async with engines[EngineType.WRITER].begin() as conn:
+        # Usar o container para obter o engine
+        from core.config import get_config
+        from sqlalchemy.ext.asyncio import create_async_engine
+
+        config = get_config()
+        engine = create_async_engine(config.writer_db_url)
+
+        async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+        await engine.dispose()
 
     async def seed_agents(self) -> list[Agent]:
         """Criar agentes básicos em português"""

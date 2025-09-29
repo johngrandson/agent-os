@@ -3,7 +3,6 @@ Application initialization - handles database, agents, and AgentOS setup
 Following CLAUDE.md: boring, direct, single responsibility
 """
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -25,11 +24,9 @@ class AgentCache:
         self,
         agent_repository: Any,
         agent_provider: AgentProvider,
-        cache_wrapper_factory: Callable[[list[RuntimeAgent]], list[RuntimeAgent]] | None = None,
     ) -> None:
         self.agent_repository = agent_repository
         self.agent_provider = agent_provider
-        self.cache_wrapper_factory = cache_wrapper_factory
         self._loaded_agents: list[Agent] = []
         self._runtime_agents: list[RuntimeAgent] = []
 
@@ -41,11 +38,6 @@ class AgentCache:
 
         self._loaded_agents = db_agents
         self._runtime_agents = await self.agent_provider.convert_agents_for_runtime(db_agents)
-
-        # Apply cache wrapper if provided
-        if self.cache_wrapper_factory:
-            logger.info("Applying cache wrapper to runtime agents...")
-            self._runtime_agents = self.cache_wrapper_factory(self._runtime_agents)
 
         if not self._runtime_agents:
             msg = (

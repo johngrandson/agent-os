@@ -65,6 +65,17 @@ class Config(BaseSettings):
     AGENT_INIT_TIMEOUT: int = 10
     WEBHOOK_MAX_RETRIES: int = 3
 
+    # Webhook Response Validation
+    WEBHOOK_ALLOWED_NUMBERS: str = (
+        "00000000000"  # Comma-separated list of numbers that trigger agent response
+    )
+
+    # Anti-blocking Configuration
+    WHATSAPP_MIN_DELAY_SECONDS: int = 5  # Minimum delay before responding (reduce for testing)
+    WHATSAPP_MAX_DELAY_SECONDS: int = 10  # Maximum delay before responding (reduce for testing)
+    WHATSAPP_TYPING_DURATION_SECONDS: int = 3  # How long to show typing indicator
+    WHATSAPP_MAX_MESSAGES_PER_HOUR: int = 4  # Max messages per contact per hour
+
     # Redis Configuration
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
@@ -153,6 +164,13 @@ class Config(BaseSettings):
         if self.REDIS_PASSWORD:
             return f"{protocol}://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"{protocol}://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    @property
+    def allowed_whatsapp_numbers(self) -> list[str]:
+        """Parse allowed WhatsApp numbers from comma-separated string"""
+        if not self.WEBHOOK_ALLOWED_NUMBERS:
+            return []
+        return [num.strip() for num in self.WEBHOOK_ALLOWED_NUMBERS.split(",") if num.strip()]
 
     model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

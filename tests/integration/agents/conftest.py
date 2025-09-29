@@ -22,11 +22,9 @@ async def test_db_engine():
     """Create test database engine with PostgreSQL."""
     import os
 
-    # Use environment variables for database URL
+    # Use environment variables for database URL, with test database as fallback
     database_url = (
-        os.getenv("DATABASE_URL")
-        or os.getenv("WRITER_DB_URL")
-        or "postgresql+asyncpg://fastapi:fastapi@localhost:5432/fastapi"
+        os.getenv("DATABASE_URL") or os.getenv("WRITER_DB_URL") or "sqlite+aiosqlite:///test.db"
     )
 
     engine = create_async_engine(

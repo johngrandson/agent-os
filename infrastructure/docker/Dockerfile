@@ -39,7 +39,7 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 # Install CPU-only PyTorch first to avoid CUDA version
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+# RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 # Install all dependencies via Poetry
 RUN poetry install --no-root && rm -rf $POETRY_CACHE_DIR

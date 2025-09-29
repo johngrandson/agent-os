@@ -76,7 +76,7 @@ db-migration: ## Create a new migration
 
 # Docker
 docker-up: ## Start PostgreSQL and services
-	docker compose -f $(DOCKER_COMPOSE_FILE) up --build
+	docker compose -f $(DOCKER_COMPOSE_FILE) up
 	@echo "🚀 PostgreSQL started!"
 	@echo "🗄️  PostgreSQL: localhost:5432"
 

@@ -8,7 +8,8 @@ from .registry import EventRegistry
 def register_all_domain_subscribers():
     """Register all domain subscribers with the event system"""
     # Import here to avoid circular imports
-    pass
+    import app.domains.agent_management.events.subscribers  # noqa: F401
+    import app.domains.communication.messages.subscribers  # noqa: F401
 
 
 __all__ = [

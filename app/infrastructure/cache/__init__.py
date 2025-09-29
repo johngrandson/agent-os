@@ -1,22 +1,10 @@
-"""
-Semantic cache infrastructure for agent responses.
-
-Following CLAUDE.md: Simple, boring infrastructure. Clean public API.
-"""
+"""Simple semantic cache for AI queries."""
 
 from app.infrastructure.cache.service import SemanticCacheService
-from app.infrastructure.cache.types import (
-    CacheConfig,
-    CacheEntry,
-    CacheResult,
-    CacheSearchResult,
-)
+from app.infrastructure.cache.types import CacheResult
 
 
 __all__ = [
     "SemanticCacheService",
-    "CacheEntry",
-    "CacheSearchResult",
     "CacheResult",
-    "CacheConfig",
 ]
