@@ -1,7 +1,7 @@
 import os
 
-from pydantic import ConfigDict, field_validator
-from pydantic_settings import BaseSettings
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Config(BaseSettings):
@@ -119,7 +119,7 @@ class Config(BaseSettings):
 
     @field_validator("OPENAI_API_KEY")
     @classmethod
-    def validate_openai_key(cls, v):
+    def validate_openai_key(cls, v: str) -> str:
         if v and not v.startswith("sk-"):
             msg = "OpenAI API key must start with sk-"
             raise ValueError(msg)
@@ -172,7 +172,7 @@ class Config(BaseSettings):
             return []
         return [num.strip() for num in self.WEBHOOK_ALLOWED_NUMBERS.split(",") if num.strip()]
 
-    model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 
 # Environment-specific overrides

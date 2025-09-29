@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def create_agno_tables():
+async def create_agno_tables() -> bool:
     """Create Agno database tables if they don't exist"""
     logger.info("🔧 Creating Agno database tables...")
 
