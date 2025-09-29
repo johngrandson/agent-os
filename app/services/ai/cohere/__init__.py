@@ -1,3 +1,0 @@
-"""
-Cohere AI services package.
-"""

@@ -2,16 +2,14 @@
 Webhook Agent Processor - processes messages with request-time filtering and semantic caching
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from app.domains.communication.messages.publisher import MessageEventPublisher
+from app.infrastructure.cache import SemanticCacheService
 from app.initialization import AgentCache
 from core.config import Config
 from core.logger import get_module_logger
 
-
-if TYPE_CHECKING:
-    from app.infrastructure.cache import SemanticCacheService
 
 logger = get_module_logger(__name__)
 
@@ -23,7 +21,7 @@ class WebhookAgentProcessor:
         self,
         agent_cache: AgentCache,
         event_publisher: MessageEventPublisher,
-        cache_service: "SemanticCacheService",
+        cache_service: SemanticCacheService,
         config: Config,
     ) -> None:
         self.agent_cache = agent_cache
