@@ -20,36 +20,29 @@ logger = get_module_logger(__name__)
 # Create message publisher for use in handlers if needed
 message_publisher = MessageEventPublisher(broker=broker)
 
-# Global webhook processor instance (will be injected)
-_webhook_processor: "WebhookAgentProcessor | None" = None
 
-# Global WAHA client instance (will be injected)
-_waha_client: "WahaClient | None" = None
+async def handle_message_received(
+    data: MessageEventPayload,
+    webhook_processor: "WebhookAgentProcessor",
+    waha_client: "WahaClient",
+) -> None:
+    """Handle message received events and process with webhook agent
 
-
-def set_webhook_processor(processor: "WebhookAgentProcessor") -> None:
-    """Set the webhook processor for message handling."""
-    global _webhook_processor
-    _webhook_processor = processor
-
-
-def set_waha_client(client: "WahaClient") -> None:
-    """Set the WAHA client for sending WhatsApp messages."""
-    global _waha_client
-    _waha_client = client
-
-
-async def handle_message_received(data: MessageEventPayload) -> None:
-    """Handle message received events and process with webhook agent"""
+    Args:
+        data: Message event payload containing session and webhook data
+        webhook_processor: Service for processing messages with AI agents
+        waha_client: Client for sending WhatsApp messages via WAHA API
+    """
     session_id = data["entity_id"]
     message_data = data["data"]
+    session_short = session_id[:8] if len(session_id) > 8 else session_id
 
-    logger.info(f"Message received for session: {session_id}")
+    logger.info(f"📨 Message received for session: {session_short}...")
 
     # Extract webhook data if available
     webhook_data = message_data.get("webhook_data")
     if not webhook_data:
-        logger.warning("No webhook_data found in message event")
+        logger.warning(f"❌ No webhook_data found in message event for session {session_short}")
         return
 
     # Extract required fields from webhook data
@@ -66,38 +59,32 @@ async def handle_message_received(data: MessageEventPayload) -> None:
         # Validate required fields
         if not chat_id or not message_body:
             logger.warning(
-                f"Missing required fields: chat_id={chat_id}, message_body={message_body}"
+                f"❌ Missing required fields: chat_id={chat_id}, message_body={message_body}"
             )
             return
 
         if not agent_id:
-            logger.warning("No agent_id found in webhook metadata")
+            logger.warning(f"❌ No agent_id found in webhook metadata for session {session_short}")
             return
 
         # Process message with webhook processor
-        if _webhook_processor:
-            logger.info(f"Processing message with agent {agent_id}")
-            response = await _webhook_processor.process_message(agent_id, message_body, chat_id)
+        logger.info(f"📨 Processing message with agent {agent_id}")
+        response = await webhook_processor.process_message(agent_id, message_body, chat_id)
 
-            if response:
-                logger.info(f"Agent responded: {response[:100]}...")
+        if response:
+            logger.info(f"✅ Agent responded: {response[:100]}...")
 
-                # Send response back to WhatsApp via WAHA API
-                if _waha_client:
-                    success = await _waha_client.send_text_message(chat_id, response)
-                    if success:
-                        logger.info(f"Response sent to WhatsApp chat: {chat_id}")
-                    else:
-                        logger.error(f"Failed to send response to WhatsApp chat: {chat_id}")
-                else:
-                    logger.error("WAHA client not initialized - cannot send WhatsApp message")
+            # Send response back to WhatsApp via WAHA API
+            success = await waha_client.send_text_message(chat_id, response)
+            if success:
+                logger.info(f"✅ Response sent to WhatsApp chat: {chat_id}")
             else:
-                logger.info("Agent did not provide a response")
+                logger.error(f"❌ Failed to send response to WhatsApp chat: {chat_id}")
         else:
-            logger.error("Webhook processor not initialized - cannot process message")
+            logger.info("Agent did not provide a response")
 
     except Exception as e:
-        logger.error(f"Error processing webhook message: {e}")
+        logger.error(f"❌ Error processing webhook message: {e}")
         logger.exception("Full traceback:")
 
 

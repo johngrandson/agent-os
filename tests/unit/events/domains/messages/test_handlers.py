@@ -40,15 +40,36 @@ class TestMessageHandlers:
             },
         }
 
+    @pytest.fixture
+    def mock_webhook_processor(self) -> AsyncMock:
+        """Mock webhook processor for testing"""
+        processor = AsyncMock()
+        processor.process_message = AsyncMock(return_value="Mock AI response")
+        return processor
+
+    @pytest.fixture
+    def mock_waha_client(self) -> AsyncMock:
+        """Mock WAHA client for testing"""
+        client = AsyncMock()
+        client.send_text_message = AsyncMock(return_value=True)
+        return client
+
     @pytest.mark.asyncio
     async def test_handle_message_received_executes_successfully(
-        self, sample_message_payload: MessageEventPayload
+        self,
+        sample_message_payload: MessageEventPayload,
+        mock_webhook_processor: AsyncMock,
+        mock_waha_client: AsyncMock,
     ):
         """Test that message received handler executes without errors"""
         # Test that handler executes without throwing exceptions
         # This is the core functionality - logging is implementation detail
         try:
-            await handle_message_received(sample_message_payload)
+            await handle_message_received(
+                sample_message_payload,
+                webhook_processor=mock_webhook_processor,
+                waha_client=mock_waha_client,
+            )
             # If we get here without exception, the handler worked correctly
             assert True
         except Exception as e:
@@ -56,11 +77,18 @@ class TestMessageHandlers:
 
     @pytest.mark.asyncio
     async def test_handle_message_received_processes_data(
-        self, sample_message_payload: MessageEventPayload
+        self,
+        sample_message_payload: MessageEventPayload,
+        mock_webhook_processor: AsyncMock,
+        mock_waha_client: AsyncMock,
     ):
         """Test that message received handler processes the message data correctly"""
         # Handler should process without throwing exceptions
-        await handle_message_received(sample_message_payload)
+        await handle_message_received(
+            sample_message_payload,
+            webhook_processor=mock_webhook_processor,
+            waha_client=mock_waha_client,
+        )
 
         # Basic validation that the handler can access required fields
         assert sample_message_payload["entity_id"] == "session-123"
@@ -93,7 +121,9 @@ class TestMessageHandlers:
         assert sample_sent_payload["data"]["message_content"] == "Response from AI"
 
     @pytest.mark.asyncio
-    async def test_handle_message_received_with_minimal_data(self):
+    async def test_handle_message_received_with_minimal_data(
+        self, mock_webhook_processor: AsyncMock, mock_waha_client: AsyncMock
+    ):
         """Test handler with minimal required data"""
         minimal_payload: MessageEventPayload = {
             "entity_id": "session-minimal",
@@ -102,7 +132,11 @@ class TestMessageHandlers:
         }
 
         # Should handle minimal data gracefully
-        await handle_message_received(minimal_payload)
+        await handle_message_received(
+            minimal_payload,
+            webhook_processor=mock_webhook_processor,
+            waha_client=mock_waha_client,
+        )
 
     @pytest.mark.asyncio
     async def test_handle_message_sent_with_minimal_data(self):
