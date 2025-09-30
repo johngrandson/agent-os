@@ -30,7 +30,7 @@ def setup_worker_logging() -> None:
     worker_filter = WorkerIdFilter()
 
     # Add filter and formatter to all existing handlers
-    for handler in root_logger.handlers:
+    for handler in root_logger.handlers:  # type: ignore[assignment]
         handler.addFilter(worker_filter)
         # Use WorkerIdFormatter for conditional worker ID display
         handler.setFormatter(

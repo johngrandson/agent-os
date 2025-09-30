@@ -57,7 +57,7 @@ async def process_eval_feedback(
             agent_id=request.agent_id,
         )
 
-        return result
+        return EvalFeedbackResponse(**result)
 
     except ValueError as e:
         # Business logic errors (validation failures)
