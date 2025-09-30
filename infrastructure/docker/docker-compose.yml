@@ -81,6 +81,33 @@ services:
       redis:
         condition: service_healthy
 
+  # FastStream Event Worker
+  faststream-worker:
+    image: docker-api  # Reuse the same image as api service
+    container_name: faststream-worker
+    restart: unless-stopped
+    volumes:
+      - ../..:/app
+    env_file:
+      - ../../.env
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      FASTSTREAM_WORKER: "true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      sh -c "poetry run faststream run app.faststream_cli:app --workers 2"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   waha:
     env_file:
       - ../../.env

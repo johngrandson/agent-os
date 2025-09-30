@@ -2,8 +2,42 @@
 Logging configuration for the application
 """
 
+import logging
+import os
 import sys
 from typing import Any
+
+
+class WorkerIdFilter(logging.Filter):
+    """Add worker ID to log records for multi-worker environments (FastStream only)"""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Only add worker ID if FASTSTREAM_WORKER environment variable is set
+        # This ensures worker IDs only appear in FastStream workers, not FastAPI
+        if os.getenv("FASTSTREAM_WORKER", "false").lower() == "true":
+            worker_id = os.getenv("WORKER_ID")
+            if not worker_id:
+                # Fallback to process ID for identification
+                pid = os.getpid()
+                worker_id = f"w{pid % 1000:03d}"  # Last 3 digits of PID
+            record.worker_id = worker_id
+        else:
+            # For non-worker processes (like FastAPI), use empty string
+            record.worker_id = ""
+        return True
+
+
+class WorkerIdFormatter(logging.Formatter):
+    """Custom formatter that only shows worker ID when present"""
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Add worker_prefix attribute that includes brackets only if worker_id exists
+        worker_id = getattr(record, "worker_id", "")
+        if worker_id:
+            record.worker_prefix = f" - [{worker_id}]"
+        else:
+            record.worker_prefix = ""
+        return super().format(record)
 
 
 def setup_logging(level: str = "INFO") -> dict[str, Any]:
@@ -12,14 +46,21 @@ def setup_logging(level: str = "INFO") -> dict[str, Any]:
     return {
         "version": 1,
         "disable_existing_loggers": False,
+        "filters": {
+            "worker_id": {
+                "()": "core.logging_config.WorkerIdFilter",
+            }
+        },
         "formatters": {
             "default": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "()": "core.logging_config.WorkerIdFormatter",
+                "fmt": "%(asctime)s%(worker_prefix)s - %(name)s - %(levelname)s - %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "detailed": {
-                "format": (
-                    "%(asctime)s - %(name)s - %(levelname)s - "
+                "()": "core.logging_config.WorkerIdFormatter",
+                "fmt": (
+                    "%(asctime)s%(worker_prefix)s - %(name)s - %(levelname)s - "
                     "%(module)s:%(funcName)s:%(lineno)d - %(message)s"
                 ),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
@@ -31,12 +72,14 @@ def setup_logging(level: str = "INFO") -> dict[str, Any]:
                 "level": level,
                 "formatter": "default",
                 "stream": "ext://sys.stdout",
+                "filters": ["worker_id"],
             },
             "detailed_console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
                 "formatter": "detailed",
                 "stream": "ext://sys.stdout",
+                "filters": ["worker_id"],
             },
         },
         "loggers": {
@@ -80,12 +123,15 @@ def configure_logging(debug: bool = False) -> None:
     uvicorn_access = logging.getLogger("uvicorn.access")
     uvicorn_access.setLevel(logging.INFO)
 
-    # Set up root logger to output to stdout
+    # Set up root logger to output to stdout with conditional worker ID
     root_logger = logging.getLogger()
     if not root_logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
+        handler.addFilter(WorkerIdFilter())
         handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            WorkerIdFormatter(
+                "%(asctime)s%(worker_prefix)s - %(name)s - %(levelname)s - %(message)s"
+            )
         )
         root_logger.addHandler(handler)
 

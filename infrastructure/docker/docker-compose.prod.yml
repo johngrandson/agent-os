@@ -1,0 +1,248 @@
+# Production Docker Compose with Horizontal Scaling
+# This configuration deploys multiple API instances behind a load balancer
+
+x-environment: &common-env
+  ENV: production
+  DEBUG: false
+  USE_DISTRIBUTED_AGENT_CACHE: true
+  FASTSTREAM_WORKERS: 2  # Reduced per-container workers for better resource distribution
+
+x-build: &common-build
+  context: ../..
+  dockerfile: infrastructure/docker/Dockerfile
+  target: production
+
+x-api-common: &api-common
+  build: *common-build
+  restart: unless-stopped
+  volumes:
+    # No volume mounts in production for better security
+  env_file:
+    - ../../.env
+  environment:
+    <<: *common-env
+    PYTHONPATH: /app
+    PYTHONUNBUFFERED: 1
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "5"
+  command: >
+    sh -c "poetry run uvicorn app.server:create_app
+    --factory
+    --host 0.0.0.0
+    --port 8000
+    --log-level info
+    --access-log"
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+    interval: 15s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+        cpus: '1.0'
+      reservations:
+        memory: 512M
+        cpus: '0.5'
+
+services:
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: fastapi-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"  # For future SSL configuration
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx_status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  # PostgreSQL Database with pgvector
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: fastapi-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../../.env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi -d fastapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+
+  # Redis for event broker and caching
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # API Instance 1
+  api-1:
+    <<: *api-common
+    container_name: fastapi-api-1
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      INSTANCE_ID: api-1
+
+  # API Instance 2
+  api-2:
+    <<: *api-common
+    container_name: fastapi-api-2
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      INSTANCE_ID: api-2
+
+  # API Instance 3
+  api-3:
+    <<: *api-common
+    container_name: fastapi-api-3
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      INSTANCE_ID: api-3
+
+  # FastStream Event Workers (shared across API instances)
+  faststream-worker:
+    build: *common-build
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      <<: *common-env
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      FASTSTREAM_WORKER: "true"
+      FASTSTREAM_WORKERS: 4  # More workers for event processing
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    command: >
+      sh -c "poetry run faststream run app.cli.faststream_worker:app --workers 4"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.cli.health", "--json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2  # Run 2 instances with 4 workers each = 8 total workers
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '1.0'
+
+  # WAHA (WhatsApp API)
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../../.env
+    volumes:
+      - waha_data:/app/.sessions
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  waha_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
