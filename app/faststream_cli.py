@@ -18,7 +18,7 @@ from core.logging_config import WorkerIdFilter, WorkerIdFormatter
 
 # Configure worker ID in logs
 def setup_worker_logging() -> None:
-    """Add worker ID to all log handlers"""
+    """Add worker ID to all log handlers and suppress httpx cleanup errors"""
     root_logger = logging.getLogger()
 
     # Ensure we have at least one handler
@@ -38,6 +38,11 @@ def setup_worker_logging() -> None:
                 "%(asctime)s%(worker_prefix)s - %(name)s - %(levelname)s - %(message)s"
             )
         )
+
+    # Suppress asyncio transport cleanup errors from httpx/Agno library
+    # These are benign errors that occur after successful operations
+    asyncio_logger = logging.getLogger("asyncio")
+    asyncio_logger.addFilter(lambda record: "TCPTransport" not in str(record.getMessage()))
 
 
 # Setup logging before building app

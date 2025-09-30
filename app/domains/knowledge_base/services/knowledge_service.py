@@ -1,5 +1,6 @@
 """Knowledge service for managing agent knowledge operations"""
 
+import asyncio
 from typing import Any
 
 from app.domains.knowledge_base.services.agent_knowledge_factory import AgentKnowledgeFactory
@@ -57,27 +58,15 @@ class KnowledgeService:
                 "score": score,
             }
 
-            # Add content to knowledge base
-            # Run in thread pool to avoid asyncio.run() conflicts with FastStream
-            import asyncio
-            from functools import partial
-
-            loop = asyncio.get_event_loop()
-            add_content_fn = partial(
+            # Add content to knowledge base using asyncio.to_thread
+            # This properly handles sync code with async context
+            await asyncio.to_thread(
                 knowledge.add_content,
                 name=f"Evaluation Feedback - {eval_id}",
                 text_content=content,
                 metadata=metadata,
                 skip_if_exists=True,
             )
-
-            # Suppress only ResourceWarnings from httpx transport cleanup
-            # These are benign warnings that don't affect functionality
-            import warnings
-
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", category=ResourceWarning, module="httpx")
-                await loop.run_in_executor(None, add_content_fn)
 
             logger.info(
                 f"✅ Successfully added eval feedback {eval_id} to knowledge for agent {agent_name}"

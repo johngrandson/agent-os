@@ -126,15 +126,15 @@ class AgnoAgentConverter:
                 f"Always respond in the default language: {db_agent.default_language}",
                 # Core search behavior
                 (
-                    "CRITICAL: Always search your knowledge base for domain-specific questions, "
-                    "technical queries, or requests about locations, units, facilities, "
-                    "procedures, or company-specific information."
+                    "CRITICAL: Always search your knowledge base for domain-specific "
+                    "questions, technical queries, or requests about locations, units, "
+                    "facilities, procedures, or company-specific information."
                 ),
                 # Smart search exceptions
                 (
-                    "You may respond directly without searching for: greetings, clarifications "
-                    "about previous responses, general knowledge questions, "
-                    "or basic conversational exchanges."
+                    "You may respond directly without searching for: greetings, "
+                    "clarifications about previous responses, general knowledge "
+                    "questions, or basic conversational exchanges."
                 ),
                 # Precision guidelines
                 "When providing information from the knowledge base:",
@@ -147,20 +147,27 @@ class AgnoAgentConverter:
                 "- Explicitly state that the information is not available in the knowledge base",
                 "- Offer to help with related queries that might be documented",
                 "- Do not provide speculative or general answers for domain-specific questions",
+                # Response style - STRICT conciseness
+                "MANDATORY: Answer ONLY what was asked. NEVER include:",
+                "- Statements about what is NOT in the knowledge base",
+                "- Offers to search for more information",
+                "- Questions back to the user unless they ask for options",
+                "- Phrases like 'documented', 'base de conhecimento', 'não há outras'",
+                "- Any meta-commentary about the search or database",
                 # Response quality
-                "Structure responses clearly with:",
-                "- Direct answers to the user's question first",
-                "- Supporting details from the knowledge base",
-                "- Clear citations or references when possible",
-                "- Actionable next steps if applicable",
+                "Structure responses with:",
+                "- Direct, factual answers only",
+                "- Minimal supporting details when essential",
+                "- No speculative or advisory language",
                 # Error handling
                 (
                     "If the search tool fails or is unavailable, inform the user "
-                    "about the limitation and suggest alternative ways to get the information."
+                    "about the limitation and suggest alternative ways to get "
+                    "the information."
                 ),
             ]
 
-            instructions = [default_instructions] + instructions
+            instructions = default_instructions + instructions
 
         # Adjust history settings based on database availability
         if self.db is None:
