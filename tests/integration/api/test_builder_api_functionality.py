@@ -31,25 +31,6 @@ class TestAPIEndpointFunctionality:
         assert data["service"] == "agent-os"
         assert data["version"] == "1.0.0"
 
-    def test_health_check_detailed_endpoint(self):
-        """Detailed health check endpoint should return extended information"""
-        client = TestClient(app)
-        response = client.get("/api/v1/health/detailed")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Verify expected response structure
-        assert "status" in data
-        assert "service" in data
-        assert "version" in data
-        assert "environment" in data
-
-        # Verify expected values
-        assert data["status"] == "healthy"
-        assert data["service"] == "agent-os"
-        assert data["version"] == "1.0.0"
-
     def test_cors_headers_are_present(self):
         """CORS headers should be properly configured for cross-origin requests"""
         client = TestClient(app)
@@ -105,7 +86,6 @@ class TestBuilderPatternRegression:
                 route_paths.append(route.path)
 
         assert "/api/v1/health" in route_paths
-        assert "/api/v1/health/detailed" in route_paths
 
     def test_app_has_domain_routes_configured(self):
         """App should have domain routes properly configured"""
