@@ -1,0 +1,64 @@
+# Nginx load balancer test with existing scaled API instances
+# This adds nginx to front the existing scaled API instances
+
+services:
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: fastapi-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx_status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      default:
+        aliases:
+          - load-balancer
+
+  # Reference existing API instances from scaled compose
+  api-1:
+    extends:
+      file: docker-compose.scaled.yml
+      service: api-1
+    networks:
+      default:
+        aliases:
+          - api-1
+
+  api-2:
+    extends:
+      file: docker-compose.scaled.yml
+      service: api-2
+    networks:
+      default:
+        aliases:
+          - api-2
+
+  api-3:
+    extends:
+      file: docker-compose.scaled.yml
+      service: api-3
+    networks:
+      default:
+        aliases:
+          - api-3
+
+volumes:
+  nginx_logs:
+    driver: local
+
+networks:
+  default:
+    external:
+      name: docker_default

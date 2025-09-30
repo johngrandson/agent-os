@@ -6,6 +6,11 @@ from app.domains.communication.messages.publisher import MessageEventPublisher
 from app.domains.communication.webhooks.services.webhook_agent_processor import (
     WebhookAgentProcessor,
 )
+from app.domains.evaluation.events.publisher import EvaluationEventPublisher
+from app.domains.evaluation.services.accuracy_eval_service import AccuracyEvalService
+from app.domains.evaluation.services.eval_feedback_service import EvalFeedbackService
+from app.domains.knowledge_base.services.agent_knowledge_factory import AgentKnowledgeFactory
+from app.domains.knowledge_base.services.knowledge_service import KnowledgeService
 
 # Cache imports
 from app.infrastructure.cache import SemanticCacheService
@@ -43,7 +48,10 @@ class Container(containers.DeclarativeContainer):
     writer_engine = providers.Singleton(
         create_async_engine,
         config_object.provided.WRITER_DB_URL,
-        pool_recycle=3600,  # Recycle connections after 1 hour
+        pool_recycle=config_object.provided.DB_POOL_RECYCLE,
+        pool_size=config_object.provided.DB_POOL_SIZE,
+        pool_pre_ping=config_object.provided.DB_POOL_PRE_PING,
+        max_overflow=config_object.provided.DB_MAX_OVERFLOW,
         echo=config_object.provided.DEBUG,
         poolclass=QueuePool,
     )
@@ -51,10 +59,10 @@ class Container(containers.DeclarativeContainer):
     reader_engine = providers.Singleton(
         create_async_engine,
         config_object.provided.READER_DB_URL,
-        pool_recycle=3600,  # Recycle connections after 1 hour
-        pool_size=20,  # Number of connections to keep in the pool
-        pool_pre_ping=True,  # Test connections before using them
-        max_overflow=30,  # Additional connections when needed
+        pool_recycle=config_object.provided.DB_POOL_RECYCLE,
+        pool_size=config_object.provided.DB_POOL_SIZE,
+        pool_pre_ping=config_object.provided.DB_POOL_PRE_PING,
+        max_overflow=config_object.provided.DB_MAX_OVERFLOW,
         echo=config_object.provided.DEBUG,
         poolclass=QueuePool,
     )
@@ -96,6 +104,11 @@ class Container(containers.DeclarativeContainer):
         broker=event_broker,
     )
 
+    evaluation_event_publisher = providers.Singleton(
+        EvaluationEventPublisher,
+        broker=event_broker,
+    )
+
     # OpenAI client
     openai_client = providers.Singleton(AsyncOpenAI)
 
@@ -105,11 +118,34 @@ class Container(containers.DeclarativeContainer):
     # Repositories
     agent_repository = providers.Factory(AgentRepository)
 
+    # Knowledge services
+    agent_knowledge_factory = providers.Singleton(
+        AgentKnowledgeFactory,
+        db_url=config_object.provided.AGNO_DB_URL,
+        event_publisher=agent_event_publisher,
+    )
+
+    knowledge_service = providers.Singleton(
+        KnowledgeService,
+        knowledge_factory=agent_knowledge_factory,
+    )
+
     # Services
     agent_service = providers.Singleton(
         AgentService,
         repository=agent_repository,
         event_publisher=agent_event_publisher,
+    )
+
+    eval_feedback_service = providers.Singleton(
+        EvalFeedbackService,
+        event_publisher=evaluation_event_publisher,
+        config=config_object,
+    )
+
+    accuracy_eval_service = providers.Singleton(
+        AccuracyEvalService,
+        agent_provider=agent_provider,
     )
 
     # Semantic Cache Service (simplified, single responsibility)
@@ -119,8 +155,8 @@ class Container(containers.DeclarativeContainer):
         config=config_object,
     )
 
-    # Agent cache for simple storage and lookup
-    agent_cache = providers.Singleton(
+    # Agent cache - simple in-memory implementation
+    agent_cache = providers.Factory(
         AgentCache,
         agent_repository=agent_repository,
         agent_provider=agent_provider,

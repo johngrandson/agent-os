@@ -1,156 +1,24 @@
-from typing import Any
+"""FastAPI server entry point for Agent OS."""
 
-from app.container import Container
 from app.domains.agent_management.api.routers import agent_router
 from app.domains.communication.webhooks.api.routers import webhook_router
-from app.initialization import initialize_database
-from app.shared.events import (
-    faststream_app,
-    register_all_domain_subscribers,
-    setup_broker_with_handlers,
+from app.domains.evaluation.api.routers import accuracy_eval_router, eval_feedback_router
+from app.shared.server.builder import FastAPIServerBuilder
+
+from fastapi import FastAPI
+
+
+# Build FastAPI app using builder pattern
+app = (
+    FastAPIServerBuilder()
+    .add_domain_router(agent_router, "/api/v1/agents")
+    .add_domain_router(webhook_router, "/api/v1/webhook")
+    .add_domain_router(eval_feedback_router, "/api/v1/eval-feedback")
+    .add_domain_router(accuracy_eval_router, "/api/v1/accuracy-eval")
+    .build()
 )
-from core.config import config
-from core.exceptions import CustomException
-from core.fastapi.dependencies import Logging
-from core.fastapi.middlewares import ResponseLogMiddleware, SQLAlchemyMiddleware
-from core.logger import get_module_logger
-from core.logging_config import configure_logging
-from dotenv import load_dotenv
-from fastapi.middleware import Middleware
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from fastapi import Depends, FastAPI, Request
-
-
-# Load environment variables
-load_dotenv()
-
-# Configure logging early
-configure_logging(debug=config.DEBUG)
-logger = get_module_logger(__name__)
-
-
-def create_middlewares() -> list[Middleware]:
-    """Configure application middlewares"""
-    return [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=[
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://localhost:8000",
-            ],
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=["*"],
-        ),
-        Middleware(SQLAlchemyMiddleware),
-        Middleware(ResponseLogMiddleware),
-    ]
-
-
-def setup_exception_handlers(app: FastAPI) -> None:
-    """Configure application exception handlers"""
-
-    @app.exception_handler(CustomException)
-    async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
-        return JSONResponse(
-            status_code=exc.code,
-            content={"error_code": exc.error_code, "message": exc.message},
-        )
-
-
-def setup_routes(app: FastAPI) -> None:
-    """Configure application routes"""
-
-    @app.get("/api/v1/health")
-    async def health_check() -> dict[str, Any]:
-        """Basic health check endpoint"""
-        return {
-            "status": "healthy",
-            "service": "agent-os",
-            "version": "1.0.0",
-            "environment": config.ENV,
-        }
-
-    app.include_router(agent_router, prefix="/api/v1/agents")
-    app.include_router(webhook_router, prefix="/api/v1/webhook")
-
-
-def setup_dependency_injection(container: Container) -> None:
-    """Configure dependency injection"""
-    container.wire(
-        modules=[
-            "app.domains.agent_management.api.routers",
-            "app.domains.communication.webhooks.api.routers",
-        ]
-    )
 
 
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application"""
-    # Create container and setup DI
-    container = Container()
-    setup_dependency_injection(container)
-
-    # Event system still available for other domains (agent management, etc.)
-    register_all_domain_subscribers()
-    setup_broker_with_handlers()
-
-    # Get agent cache and provider from container
-    agent_cache = container.agent_cache()
-    agent_provider = container.agent_provider()
-
-    # Create FastAPI app
-    app = FastAPI(
-        title="Agent OS API",
-        description="Agent Operating System with integrated AgentOS support",
-        version="1.0.0",
-        dependencies=[Depends(Logging)],
-        middleware=create_middlewares(),
-    )
-
-    # Setup app components
-    setup_exception_handlers(app)
-    setup_routes(app)
-
-    # Setup startup event
-    @app.on_event("startup")
-    async def initialize_on_startup() -> None:
-        # Initialize database (simple function call)
-        await initialize_database()
-
-        # Start the FastStream application for both publishing and consuming
-        try:
-            await faststream_app.start()
-            logger.info("🚀 EVENTS: FastStream started - Publishers & Handlers active")
-        except Exception as e:
-            logger.error(f"❌ EVENTS: FastStream failed - {e}")
-            # Don't raise here to allow app to start, but log the issue
-            # This ensures the API is still functional even if events fail
-
-        # Dependencies are now injected directly in routes - no global state needed
-        logger.info("🔗 WEBHOOK: Using direct dependency injection (simplified)")
-
-        # Load all agents once (now includes cache wrapping if enabled)
-        db_agents, runtime_agents = await agent_cache.load_all_agents()
-
-        # Setup runtime system (AgentOS) with provider
-        nonlocal app
-        app = agent_provider.setup_runtime_with_app(runtime_agents, app)
-
-    # Setup shutdown event
-    @app.on_event("shutdown")
-    async def cleanup_on_shutdown() -> None:
-        # Stop the FastStream application
-        try:
-            await faststream_app.stop()
-            logger.info("🛑 EVENTS: FastStream stopped")
-        except Exception as e:
-            logger.error(f"❌ EVENTS: Stop failed - {e}")
-
+    """Create and return the FastAPI application instance"""
     return app
-
-
-# App should be created by the ASGI server or startup script

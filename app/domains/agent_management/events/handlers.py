@@ -48,3 +48,11 @@ async def handle_agent_knowledge_created(data: AgentEventPayload) -> None:
     agent_short = agent_id[:8]
 
     logger.info(f"📚 HANDLER: Agent [{agent_short}] - KNOWLEDGE CREATED")
+
+
+async def handle_agent_knowledge_deleted(data: AgentEventPayload) -> None:
+    """Handle agent knowledge deleted events"""
+    agent_id = data["entity_id"]
+    agent_short = agent_id[:8]
+
+    logger.info(f"📚 HANDLER: Agent [{agent_short}] - KNOWLEDGE DELETED")

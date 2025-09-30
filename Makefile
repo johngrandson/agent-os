@@ -1,5 +1,6 @@
 .PHONY: help install dev test lint format clean
-.PHONY: db-upgrade db-migration docker-up docker-down
+.PHONY: db-upgrade db-migration docker-up docker-down multiworker-up multiworker-down
+.PHONY: eval-accuracy eval-accuracy-agent
 
 # Variables
 POETRY := poetry
@@ -9,6 +10,7 @@ APP_MODULE := app.server:app
 HOST := 0.0.0.0
 PORT := 8000
 DOCKER_COMPOSE_FILE := infrastructure/docker/docker-compose.yml
+MULTIWORKER_COMPOSE_FILE := infrastructure/docker/docker-compose.multiworker.yml
 
 help: ## Show this help message
 	@echo "🚀 Agent OS - Essential Commands:"
@@ -18,6 +20,10 @@ help: ## Show this help message
 	@echo "  make docker-up     - Start PostgreSQL via Docker"
 	@echo "  make db-upgrade    - Apply database migrations"
 	@echo "  make dev           - Start development server"
+	@echo ""
+	@echo "🔄 Multi-Worker Scaling:"
+	@echo "  make multiworker-up   - Start with FastStream workers (4 workers)"
+	@echo "  make multiworker-down - Stop multi-worker deployment"
 	@echo ""
 	@echo "📡 Development:"
 	@echo "  make dev           - Start development server with auto-reload"
@@ -40,6 +46,10 @@ help: ## Show this help message
 	@echo "📖 Access URLs:"
 	@echo "  API Server: http://localhost:8000"
 	@echo "  Swagger UI: http://localhost:8000/docs"
+	@echo ""
+	@echo "🧪 Evaluations:"
+	@echo "  make eval-accuracy           - Run accuracy evaluations"
+	@echo "  make eval-accuracy-agent     - Run accuracy eval for specific agent (AGENT_ID=xyz)"
 
 # Essential Dependencies
 install: ## Install dependencies
@@ -82,6 +92,22 @@ docker-up: ## Start PostgreSQL and services
 
 docker-down: ## Stop all services
 	docker compose -f $(DOCKER_COMPOSE_FILE) down
+
+# Multi-Worker FastStream
+multiworker-up: ## Start multi-worker FastStream deployment
+	@echo "🚀 Starting multi-worker FastStream deployment..."
+	@echo "⚙️  Workers: 4 (configurable with FASTSTREAM_WORKERS env var)"
+	@echo "📦 Distributed cache: Enabled"
+	docker compose -f $(MULTIWORKER_COMPOSE_FILE) up --build
+
+multiworker-down: ## Stop multi-worker deployment
+	docker compose -f $(MULTIWORKER_COMPOSE_FILE) down
+
+
+# Evaluations
+eval-accuracy: ## Run accuracy evaluations
+	@echo "🧪 Running accuracy evaluations with configured agents..."
+	$(PYTHON) evals/accuracy/run_accuracy.py --config evals/accuracy/configs/eval_tests.json
 
 # Cleanup
 clean: ## Clean build artifacts

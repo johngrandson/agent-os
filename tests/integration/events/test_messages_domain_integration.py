@@ -4,47 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 from app.domains.communication.messages.publisher import MessageEventPublisher
-from app.domains.communication.messages.subscribers import message_router
 from app.shared.events.broker import broker
-from app.shared.events.registry import event_registry
 
 
 class TestMessagesDomainIntegration:
     """Test integration of messages domain with the event system"""
-
-    def test_messages_router_is_registered_with_event_registry(self):
-        """Test that messages router is properly registered"""
-        # The subscriber import should have registered the router
-        from app.domains.communication.messages import subscribers  # noqa: F401
-
-        # Verify the router is registered
-        registered_router = event_registry.get_domain_router("messages")
-        assert registered_router is message_router
-
-    def test_messages_domain_integrates_with_event_system(self):
-        """Test that messages domain integrates properly with the event system"""
-        # Import messages domain subscribers
-        from app.domains.communication.messages import (
-            subscribers as message_subscribers,  # noqa: F401
-        )
-
-        # Verify messages router is registered
-        message_router = event_registry.get_domain_router("messages")
-        assert message_router is not None
-
-        # Verify messages domain is included in all registered domains
-        all_routers = event_registry.get_all_routers()
-        assert "messages" in all_routers
-
-    def test_all_registered_domains_include_messages(self):
-        """Test that messages domain appears in all registered domains"""
-        # Import subscribers to ensure registration
-        from app.domains.communication.messages import subscribers  # noqa: F401
-
-        all_routers = event_registry.get_all_routers()
-        domain_names = list(all_routers.keys())
-
-        assert "messages" in domain_names
 
     @pytest.mark.asyncio
     async def test_messages_publisher_integration_with_broker(self):
@@ -95,23 +59,23 @@ class TestMessagesDomainIntegration:
         assert publisher._build_channel("message_received") == "messages.message_received"
         assert publisher._build_channel("message_sent") == "messages.message_sent"
 
-    def test_messages_handlers_and_subscribers_exist_and_are_callable(self):
-        """Test that message handlers and subscribers exist and can be imported"""
+    def test_messages_handlers_and_registry_exist_and_are_callable(self):
+        """Test that message handlers and registry exist and can be imported"""
         from app.domains.communication.messages.handlers import (
             handle_message_received,
             handle_message_sent,
         )
-        from app.domains.communication.messages.subscribers import (
-            message_received_subscriber,
-            message_sent_subscriber,
-        )
+        from app.domains.communication.messages.subscribers import MESSAGE_EVENTS
 
         # Verify handlers are callable
         assert callable(handle_message_received)
         assert callable(handle_message_sent)
-        # Verify subscribers are callable
-        assert callable(message_received_subscriber)
-        assert callable(message_sent_subscriber)
+
+        # Verify registry is configured properly
+        assert MESSAGE_EVENTS.domain_name == "messages"
+        assert len(MESSAGE_EVENTS.event_handlers) == 2
+        assert "message_received" in MESSAGE_EVENTS.event_handlers
+        assert "message_sent" in MESSAGE_EVENTS.event_handlers
 
     def test_no_import_errors_with_messages_domain(self):
         """Test that importing messages domain doesn't cause errors"""
@@ -122,11 +86,11 @@ class TestMessagesDomainIntegration:
         assert hasattr(events, "MessageEvent")
         assert hasattr(events, "MessageEventPayload")
         assert hasattr(publisher, "MessageEventPublisher")
-        assert hasattr(subscribers, "message_router")
+        assert hasattr(subscribers, "MESSAGE_EVENTS")
 
     def test_messages_domain_types_are_compatible(self):
         """Test that messages domain types are compatible with base types"""
-        from app.domains.communication.messages.events import MessageEvent, MessageEventPayload
+        from app.domains.communication.messages.events import MessageEvent
         from app.domains.communication.messages.publisher import MessageEventPublisher
         from app.shared.events.base import BaseEvent, BaseEventPublisher
 

@@ -3,7 +3,6 @@ Agno provider implementation - wraps existing agno functionality.
 Following CLAUDE.md: boring wrapper, don't rewrite existing code.
 """
 
-import asyncio
 import contextlib
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
@@ -227,44 +226,27 @@ class AgnoRuntimeAgent(RuntimeAgent):
         self._agno_agent = agno_agent
 
     async def arun(self, message: str) -> str:
-        """Run the agno agent with a message, isolating sync operations from async context"""
-        from concurrent.futures import ThreadPoolExecutor
+        """
+        Run the agno agent with a message and return the response content.
 
-        # Run agno agent in thread pool to avoid async/sync conflicts
-        loop = asyncio.get_event_loop()
-
-        def run_agent_sync() -> Any:
-            """Run the agent synchronously in a separate thread"""
-            # Use sync run method to avoid greenlet issues
-            return self._agno_agent.run(input=message)
-
+        Agno's arun() returns RunOutput when stream=False (default behavior).
+        The RunOutput object has a .content attribute with the agent's response.
+        """
         try:
-            # Execute in thread pool to isolate sync database operations
-            with ThreadPoolExecutor(max_workers=1, thread_name_prefix="agno_agent") as executor:
-                result = await loop.run_in_executor(executor, run_agent_sync)
+            # Call arun with stream=False to get RunOutput directly (not an async generator)
+            run_output = await self._agno_agent.arun(input=message, stream=False)
 
-            # Handle different return types from agno - get content as string
-            if hasattr(result, "content"):
-                content = result.content
-                return str(content) if content is not None else ""
-            if isinstance(result, str):
-                return result
-            return str(result) if result is not None else ""
+            # Extract content from RunOutput object
+            if hasattr(run_output, "content") and run_output.content is not None:
+                return str(run_output.content)
+
+            # Fallback to empty string if no content
+            logger.warning(f"Agent {self.name} returned response without content")
+            return ""
 
         except Exception as e:
-            logger.error(f"Error running agent {self.name}: {e}")
-            # Fallback: try without thread pool as last resort
-            try:
-                result = await self._agno_agent.arun(input=message)
-                if hasattr(result, "content"):
-                    content = result.content
-                    return str(content) if content is not None else ""
-                if isinstance(result, str):
-                    return result
-                return str(result) if result is not None else ""
-            except Exception as fallback_error:
-                logger.error(f"Fallback also failed for agent {self.name}: {fallback_error}")
-                return f"Error: Agent {self.name} encountered an issue processing the request."
+            logger.error(f"Error running agent {self.name}: {e}", exc_info=True)
+            return f"Error: Agent {self.name} encountered an issue: {str(e)}"
 
     @property
     def id(self) -> str:
@@ -314,6 +296,45 @@ class AgnoProvider(AgentProvider):
         self.agno_agent_converter = AgnoAgentConverter(
             knowledge_factory=knowledge_factory, model_factory=model_factory
         )
+
+    async def get_agent(self, agent_id: str) -> AgnoAgent | None:
+        """
+        Get an agent by ID from database and convert to AgnoAgent.
+
+        Args:
+            agent_id: The agent ID (UUID as string)
+
+        Returns:
+            AgnoAgent instance or None if not found
+        """
+        import uuid
+
+        from app.domains.agent_management.repositories.agent_repository import AgentRepository
+
+        logger.info(f"Loading agent with ID: {agent_id} via AgnoProvider")
+
+        # Load agent from database
+        try:
+            agent_uuid = uuid.UUID(agent_id)
+        except ValueError:
+            logger.error(f"Invalid agent ID format: {agent_id}")
+            return None
+
+        repository = AgentRepository()
+        db_agent = await repository.get_agent_by_id(agent_id=agent_uuid)
+
+        if not db_agent:
+            logger.error(f"Agent not found with ID: {agent_id}")
+            return None
+
+        # Convert to AgnoAgent
+        try:
+            agno_agent = await self.agno_agent_converter.convert_agent(db_agent)
+            logger.info(f"Successfully loaded and converted agent: {agno_agent.name}")
+            return agno_agent
+        except Exception as e:
+            logger.error(f"Failed to convert agent {agent_id}: {e}")
+            return None
 
     async def convert_agents_for_webhook(self, db_agents: list[Agent]) -> list[RuntimeAgent]:
         """Convert agents for webhook processing - uses existing agno converter"""

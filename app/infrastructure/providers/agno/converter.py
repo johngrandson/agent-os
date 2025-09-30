@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from agno.agent import Agent as AgnoAgent
+from agno.tools.knowledge import KnowledgeTools
 from app.domains.agent_management.agent import Agent
 from app.domains.knowledge_base.services.agent_knowledge_factory import AgentKnowledgeFactory
 from app.infrastructure.providers.agno.provider import AgnoDatabaseFactory, AgnoModelFactory
@@ -118,12 +119,48 @@ class AgnoAgentConverter:
             model = self.model_factory.create_default_model()
 
         # Build instructions with language context
-        instructions = db_agent.instructions or []
+        instructions: list[str] = db_agent.instructions or []
+
         if db_agent.default_language:
-            language_instruction = (
-                f"Always respond in the default language: {db_agent.default_language}"
-            )
-            instructions = [language_instruction] + instructions
+            default_instructions: list[str] = [
+                f"Always respond in the default language: {db_agent.default_language}",
+                # Core search behavior
+                (
+                    "CRITICAL: Always search your knowledge base for domain-specific questions, "
+                    "technical queries, or requests about locations, units, facilities, "
+                    "procedures, or company-specific information."
+                ),
+                # Smart search exceptions
+                (
+                    "You may respond directly without searching for: greetings, clarifications "
+                    "about previous responses, general knowledge questions, "
+                    "or basic conversational exchanges."
+                ),
+                # Precision guidelines
+                "When providing information from the knowledge base:",
+                "- Use exact naming conventions and terminology found in the documentation",
+                "- Only state what is explicitly documented - do not infer, assume, or extrapolate",
+                "- If multiple interpretations exist, mention all documented options",
+                "- Clearly distinguish between documented facts and general knowledge",
+                # Handling search failures
+                "If knowledge base search yields no relevant results:",
+                "- Explicitly state that the information is not available in the knowledge base",
+                "- Offer to help with related queries that might be documented",
+                "- Do not provide speculative or general answers for domain-specific questions",
+                # Response quality
+                "Structure responses clearly with:",
+                "- Direct answers to the user's question first",
+                "- Supporting details from the knowledge base",
+                "- Clear citations or references when possible",
+                "- Actionable next steps if applicable",
+                # Error handling
+                (
+                    "If the search tool fails or is unavailable, inform the user "
+                    "about the limitation and suggest alternative ways to get the information."
+                ),
+            ]
+
+            instructions = [default_instructions] + instructions
 
         # Adjust history settings based on database availability
         if self.db is None:
@@ -151,6 +188,16 @@ class AgnoAgentConverter:
             knowledge_filters=agent_knowledge_filters,
             model=model,
             db=self.db,  # Add database for history storage
+            tools=[
+                KnowledgeTools(
+                    knowledge=knowledge,
+                    enable_think=True,
+                    enable_search=True,
+                    enable_analyze=True,
+                    add_instructions=True,
+                    add_few_shot=True,
+                )
+            ],
         )
 
         logger.info(f"Successfully converted agent {db_agent.name}")

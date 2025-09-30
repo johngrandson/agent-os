@@ -72,8 +72,8 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Production command
-CMD ["python", "-m", "uvicorn", "app.server:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+# Production command - FastStream multi-worker event processing
+CMD ["faststream", "run", "app.faststream_cli:app", "--workers", "2"]
 
 # Development stage
 FROM builder AS development
@@ -99,5 +99,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Development command
-CMD ["python", "-m", "uvicorn", "app.server:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Development command - FastStream single worker with reload capability
+CMD ["faststream", "run", "app.faststream_cli:app", "--workers", "1", "--reload"]

@@ -34,6 +34,7 @@ class Config(BaseSettings):
 
     # Agent Configuration
     AGNO_DEFAULT_MODEL: str = "gpt-4o-mini"
+    AGNO_API_BASE_URL: str = "http://localhost:8000"
     OPENAI_API_KEY: str | None = None
 
     # AI Services Configuration (HuggingFace)
@@ -94,6 +95,15 @@ class Config(BaseSettings):
     REDIS_EVENT_CHANNEL_PREFIX: str = "agent_os_events"
     REDIS_EVENT_HISTORY_TTL: int = 604800  # 7 days in seconds
     REDIS_EVENT_MAX_HISTORY: int = 10000
+
+    # Multi-Worker Configuration
+    FASTSTREAM_WORKERS: int = 1  # Number of FastStream workers for multi-worker mode
+
+    # Database Connection Pool Configuration
+    DB_POOL_SIZE: int = 10  # Base pool size
+    DB_MAX_OVERFLOW: int = 15  # Additional connections when needed
+    DB_POOL_RECYCLE: int = 3600  # Recycle connections after 1 hour
+    DB_POOL_PRE_PING: bool = True  # Test connections before using them
 
     # Semantic Cache Configuration
     CACHE_ENABLED: bool = True

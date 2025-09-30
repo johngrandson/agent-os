@@ -1,0 +1,37 @@
+{
+  "agent_id": "6564a128-4ae3-4ca2-9c87-bbbca6cfed0c",
+  "test_cases": [
+    {
+      "name": "Convênios odontológicos aceitos",
+      "input": "Quais convênios odontológicos são aceitos pela clínica Ortofaccia?",
+      "expected_output": "Atendemos Dental Center, Dental Gold, Unidentis, Sulamerica e Camed.",
+      "additional_guidelines": "O agente deve responder os convênios aceitos são: Dental Center, Dental Gold, Unidentis, Sulamérica e Camed.",
+      "num_iterations": 2,
+      "active": true
+    },
+    {
+      "name": "Localização da clínica",
+      "input": "Qual é a localização da clínica Ortofaccia?",
+      "expected_output": "Av. Manoel Morais, 435 - Sala 102 - Manaíra, João Pessoa - PB.",
+      "additional_guidelines": "O agente deve responder apenas com a informação solicitada, sem explicação adicional.",
+      "num_iterations": 2,
+      "active": true
+    },
+    {
+      "name": "Horário de atendimento",
+      "input": "Qual é o horário de atendimento da clínica Ortofaccia?",
+      "expected_output": "Atendemos de segunda a sexta-feira, das 09:00 às 18:00.",
+      "additional_guidelines": "O agente deve responder apenas com a informação solicitada, sem explicação adicional.",
+      "num_iterations": 2,
+      "active": true
+    },
+    {
+      "name": "Unidades de atendimento",
+      "input": "Qual é a localização da clínica Ortofaccia e quais são as unidades de atendimento?",
+      "expected_output": "Av. Manoel Morais, 435 - Sala 102 - Manaíra, João Pessoa - PB.",
+      "additional_guidelines": "O agente deve responder o endereço da clínica Ortofaccia sem explicação adicional.",
+      "num_iterations": 2,
+      "active": true
+    }
+  ]
+}
